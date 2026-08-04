@@ -69,17 +69,20 @@ export async function exportVideo(
   const { muxer, takeBuffer } = createMuxer(format, project, target);
 
   let encoderError: Error | null = null;
-  const encoder = new VideoEncoder({
-    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-    error: (err) => {
-      encoderError = err instanceof Error ? err : new Error(String(err));
-    },
-  });
-  encoder.configure(buildEncoderConfig(format, project.settings));
-
-  const exportMap = createExportMap(project);
+  let encoder: VideoEncoder | null = null;
+  let exportMap: ReturnType<typeof createExportMap> | null = null;
   let cancelled = false;
   try {
+    encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: (err) => {
+        encoderError = err instanceof Error ? err : new Error(String(err));
+      },
+    });
+    encoder.configure(buildEncoderConfig(format, project.settings));
+    const enc = encoder;
+
+    exportMap = createExportMap(project);
     await renderFrames(exportMap.map, project, {
       shouldCancel: () => {
         cancelled = shouldCancel?.() ?? false;
@@ -87,14 +90,15 @@ export async function exportVideo(
       },
       onFrame: async (canvas, i, total) => {
         if (encoderError) throw encoderError;
-        if (encoder.encodeQueueSize > 4) {
+        if (enc.encodeQueueSize > 4) {
           await new Promise<void>((resolve) =>
-            encoder.addEventListener('dequeue', () => resolve(), { once: true }),
+            enc.addEventListener('dequeue', () => resolve(), { once: true }),
           );
+          if (encoderError) throw encoderError;
         }
         const frame = new VideoFrame(canvas, { timestamp: frameTimestampUs(i, fps) });
         try {
-          encoder.encode(frame, { keyFrame: i % (fps * 2) === 0 });
+          enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
         } finally {
           frame.close();
         }
@@ -103,14 +107,14 @@ export async function exportVideo(
     });
 
     if (cancelled) {
-      encoder.close();
+      if (enc.state !== 'closed') enc.close();
       if (target.kind === 'stream') await target.stream.abort?.();
       return { blob: null };
     }
 
-    await encoder.flush();
+    await enc.flush();
     if (encoderError) throw encoderError;
-    encoder.close();
+    enc.close();
     muxer.finalize();
 
     if (target.kind === 'stream') {
@@ -121,7 +125,7 @@ export async function exportVideo(
     return { blob: buffer ? new Blob([buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' }) : null };
   } catch (err) {
     try {
-      if (encoder.state !== 'closed') encoder.close();
+      if (encoder && encoder.state !== 'closed') encoder.close();
     } catch {
       /* already errored */
     }
@@ -134,6 +138,6 @@ export async function exportVideo(
     }
     throw err;
   } finally {
-    exportMap.dispose();
+    exportMap?.dispose();
   }
 }
