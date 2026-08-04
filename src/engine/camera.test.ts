@@ -69,3 +69,20 @@ it('cameraAt throws on a project with no keyframes', () => {
   const p = { ...proj(), keyframes: [] };
   expect(() => cameraAt(p, computeTimeline(p), 0, VP)).toThrow(/no keyframes/i);
 });
+
+it('crosses the antimeridian the short way', () => {
+  const a: CameraPose = { center: [179.5, 0], zoom: 6, bearing: 0, pitch: 0 };
+  const b: CameraPose = { center: [-179.5, 0], zoom: 6, bearing: 0, pitch: 0 };
+  const mid = interpolateCamera(a, b, 0.5, VP);
+  // short way: stays near the seam (lng ≈ ±180), never near lng 0
+  expect(Math.abs(mid.center[0])).toBeGreaterThan(90);
+  // and the zoom dip is tiny for a 1-degree hop, not a global zoom-out
+  expect(mid.zoom).toBeGreaterThan(4);
+});
+
+it('matches golden mid-flight values (locks the van Wijk-Nuij constants)', () => {
+  const mid = interpolateCamera(tokyo, osaka, 0.5, VP);
+  expect(mid.zoom).toBeCloseTo(8.1932, 3);
+  expect(mid.center[0]).toBeCloseTo(138.3467, 3);
+  expect(mid.center[1]).toBeCloseTo(35.3513, 3);
+});
