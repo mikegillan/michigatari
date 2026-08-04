@@ -1,7 +1,6 @@
 import { create } from 'zustand';
+import { appConfig } from '../config';
 import type { CameraPose, Element, Keyframe, LngLat, Project, Settings } from '../engine/types';
-
-export const DEFAULT_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 // crypto.randomUUID requires a secure context; plain-HTTP LAN hosting gets the fallback.
 export function newId(): string {
@@ -12,7 +11,7 @@ export function newId(): string {
 export function blankProject(): Project {
   return {
     version: 1,
-    settings: { resolution: '1080p', fps: 30, aspect: '16:9', styleUrl: DEFAULT_STYLE_URL },
+    settings: { resolution: '1080p', fps: 30, aspect: '16:9', styleUrl: appConfig.defaultStyleUrl },
     keyframes: [],
     elements: [],
   };

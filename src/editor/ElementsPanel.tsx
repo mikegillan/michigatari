@@ -4,7 +4,7 @@ import { notifications } from '@mantine/notifications';
 import { useEditorStore, type PlacingState } from './store';
 import { ElementRow } from './ElementRow';
 import { RegionSearch } from './RegionSearch';
-import { roadRoute } from '../providers/osrm';
+import { appConfig } from '../config';
 import { createRoadRoute } from './elementDefaults';
 import { errorMessage } from './errors';
 
@@ -39,7 +39,7 @@ export function ElementsPanel() {
     if (!before || before.kind !== 'route' || before.mode !== 'road' || !firstKf) return;
     setFetching(true);
     try {
-      const geometry = await roadRoute(before.waypoints);
+      const geometry = await appConfig.roadRoute(before.waypoints);
       const now = useEditorStore.getState().placing;
       if (now === null) return; // user cancelled mid-fetch: honor it, drop the result
       if (now !== before) {

@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { Button, Group, Stack, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { searchRegions, type RegionCandidate } from '../providers/nominatim';
+import type { RegionCandidate } from '../providers/nominatim';
+import { appConfig } from '../config';
 import { createRegion } from './elementDefaults';
 import { errorMessage } from './errors';
 import { useEditorStore } from './store';
@@ -26,7 +27,7 @@ export function RegionSearch() {
     }
     setSearching(true);
     try {
-      const r = await searchRegions(q);
+      const r = await appConfig.searchRegions(q);
       if (queryRef.current === q) setResults(r);
     } catch (err) {
       if (queryRef.current === q) {

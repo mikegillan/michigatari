@@ -3,8 +3,7 @@ import { ActionIcon, Card, ColorInput, Group, NumberInput, Stack, Text, TextInpu
 import { notifications } from '@mantine/notifications';
 import { useEditorStore } from './store';
 import { BindingEditor } from './BindingEditor';
-import { roadRoute } from '../providers/osrm';
-import { searchRegions } from '../providers/nominatim';
+import { appConfig } from '../config';
 import { errorMessage } from './errors';
 import type { Element } from '../engine/types';
 
@@ -29,7 +28,7 @@ export function ElementRow({ element }: { element: Element }) {
     if (element.type !== 'route') return;
     setRefreshing(true);
     try {
-      const geometry = await roadRoute(element.data.waypoints);
+      const geometry = await appConfig.roadRoute(element.data.waypoints);
       updateElement(element.id, (el) =>
         el.type === 'route' ? { ...el, data: { ...el.data, geometry } } : el,
       );
@@ -44,7 +43,7 @@ export function ElementRow({ element }: { element: Element }) {
     if (element.type !== 'region') return;
     setRefreshing(true);
     try {
-      const candidates = await searchRegions(element.data.query);
+      const candidates = await appConfig.searchRegions(element.data.query);
       const match =
         candidates.find(
           (c) =>

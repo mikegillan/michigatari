@@ -1,5 +1,6 @@
 import * as Mp4Muxer from 'mp4-muxer';
 import * as WebmMuxer from 'webm-muxer';
+import { appConfig } from '../config';
 import type { Project } from '../engine/types';
 import { buildEncoderConfig, exportDimensions, type ExportFormat } from './encoderConfig';
 import { frameTimestampUs } from './timing';
@@ -123,7 +124,7 @@ export async function exportVideo(
         }
 
         ctx.drawImage(canvas, 0, 0);
-        const label = '© OpenStreetMap contributors · OpenFreeMap';
+        const label = appConfig.exportAttribution;
         ctx.font = `${fontPx}px sans-serif`;
         const pad = Math.round(fontPx * 0.5);
         const w = ctx.measureText(label).width + pad * 2;
