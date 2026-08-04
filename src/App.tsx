@@ -4,11 +4,12 @@ import { MapView } from './editor/MapView';
 import { KeyframePanel } from './editor/KeyframePanel';
 import { PreviewBar } from './editor/PreviewBar';
 import { ProjectMenu } from './editor/ProjectMenu';
+import { ExportDialog } from './editor/ExportDialog';
 
 export default function App() {
   return (
     <EditorShell
-      header={<ProjectMenu />}
+      header={<><ProjectMenu /><ExportDialog /></>}
       navbar={<KeyframePanel />}
       aside={<AsidePanel />}
       main={<MapView />}
