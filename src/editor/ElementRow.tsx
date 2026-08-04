@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications';
 import { useEditorStore } from './store';
 import { BindingEditor } from './BindingEditor';
 import { roadRoute } from '../providers/osrm';
+import { searchRegions } from '../providers/nominatim';
 import type { Element } from '../engine/types';
 
 function rowTitle(el: Element): string {
@@ -37,6 +38,25 @@ export function ElementRow({ element }: { element: Element }) {
     }
   };
 
+  const refreshRegion = async () => {
+    if (element.type !== 'region') return;
+    setRefreshing(true);
+    try {
+      const candidates = await searchRegions(element.data.query);
+      const match = candidates.find((c) => c.osmId === element.data.osmId) ?? candidates[0];
+      if (!match) throw new Error('No boundary found for this region anymore.');
+      updateElement(element.id, (el) =>
+        el.type === 'region'
+          ? { ...el, data: { ...el.data, osmId: match.osmId, geometry: match.geometry } }
+          : el,
+      );
+    } catch (err) {
+      notifications.show({ color: 'red', title: 'Region refresh failed', message: String((err as Error).message) });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <Card withBorder padding="xs">
       <Stack gap={6}>
@@ -46,6 +66,10 @@ export function ElementRow({ element }: { element: Element }) {
             {element.type === 'route' && element.data.mode === 'road' && (
               <ActionIcon size="sm" variant="subtle" aria-label="Refresh road geometry" loading={refreshing}
                 onClick={refreshRoad}>↻</ActionIcon>
+            )}
+            {element.type === 'region' && (
+              <ActionIcon size="sm" variant="subtle" aria-label="Refresh region boundary" loading={refreshing}
+                onClick={refreshRegion}>↻</ActionIcon>
             )}
             <ActionIcon size="sm" variant="subtle" color="red" aria-label="Delete element"
               onClick={() => deleteElement(element.id)}>✕</ActionIcon>

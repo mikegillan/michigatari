@@ -3,6 +3,7 @@ import { Button, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEditorStore, type PlacingState } from './store';
 import { ElementRow } from './ElementRow';
+import { RegionSearch } from './RegionSearch';
 import { roadRoute } from '../providers/osrm';
 import { createRoadRoute } from './elementDefaults';
 
@@ -98,6 +99,7 @@ export function ElementsPanel() {
           <Button size="compact-xs" variant="subtle" onClick={() => setPlacing(null)}>Cancel</Button>
         </Group>
       )}
+      <RegionSearch />
       {elements.map((el) => <ElementRow key={el.id} element={el} />)}
       {elements.length === 0 && <Text size="xs" c="dimmed">No elements yet.</Text>}
     </Stack>
