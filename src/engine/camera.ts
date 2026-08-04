@@ -49,8 +49,13 @@ export function interpolateCamera(
   const bearing = from.bearing + shortestBearingDelta(from.bearing, to.bearing) * t;
   const pitch = from.pitch + (to.pitch - from.pitch) * t;
 
+  // Normalize destination longitude to prevent long-way-around antimeridian flights.
+  let toLng = to.center[0];
+  while (toLng - from.center[0] > 180) toLng -= 360;
+  while (toLng - from.center[0] < -180) toLng += 360;
+
   const p0 = project(from.center, from.zoom);
-  const p1 = project(to.center, from.zoom);
+  const p1 = project([toLng, to.center[1]], from.zoom);
   const u1 = Math.hypot(p1.x - p0.x, p1.y - p0.y); // ground distance, px at start zoom
   const w0 = Math.max(viewport.width, viewport.height); // visible span, px
   const w1 = w0 / 2 ** (to.zoom - from.zoom); // same span at end zoom
