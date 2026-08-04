@@ -66,7 +66,7 @@ export function ProjectMenu() {
           e.currentTarget.value = '';
         }}
       />
-      <Modal opened={restoreOpen} onClose={discardRestore} title="Restore unsaved work?">
+      <Modal opened={restoreOpen} onClose={() => setRestoreOpen(false)} title="Restore unsaved work?">
         <Text size="sm" mb="md">An autosaved project from a previous session was found.</Text>
         <Group justify="flex-end" gap="xs">
           <Button variant="default" onClick={discardRestore}>Discard</Button>

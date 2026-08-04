@@ -43,8 +43,9 @@ const clonePose = (p: CameraPose): CameraPose => ({
 
 /**
  * Camera pose at fraction t (0–1, ALREADY eased) along the van Wijk–Nuij
- * flight path. `viewport` is the nominal output size in px — pass
- * viewportForSettings(project.settings) so preview and export match.
+ * flight path. `viewport` is the fixed reference viewport for the project's
+ * aspect (see viewport.ts) — pass viewportForSettings(project.settings) so
+ * preview and export follow identical paths.
  */
 export function interpolateCamera(
   from: CameraPose,

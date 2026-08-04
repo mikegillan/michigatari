@@ -56,8 +56,10 @@ export async function saveProjectFile(project: Project): Promise<void> {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   a.download = 'michigatari-project.json';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
 }
 
 export async function openProjectFile(file: File): Promise<Project> {

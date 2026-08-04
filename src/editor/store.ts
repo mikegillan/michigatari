@@ -30,7 +30,7 @@ interface EditorStore {
   deleteKeyframe(id: string): void;
   setThumbnail(id: string, dataUrl: string): void;
   addElement(element: Element): void;
-  updateElement(id: string, patch: Partial<Omit<Element, 'id' | 'type'>>): void;
+  updateElement(id: string, update: (el: Element) => Element): void;
   deleteElement(id: string): void;
   setMode(mode: EditorMode): void;
   setPlaying(playing: boolean): void;
@@ -105,11 +105,11 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   addElement: (element) =>
     set((s) => ({ project: { ...s.project, elements: [...s.project.elements, element] } })),
-  updateElement: (id, patch) =>
+  updateElement: (id, update) =>
     set((s) => ({
       project: {
         ...s.project,
-        elements: s.project.elements.map((el) => (el.id === id ? ({ ...el, ...patch } as Element) : el)),
+        elements: s.project.elements.map((el) => (el.id === id ? update(el) : el)),
       },
     })),
   deleteElement: (id) =>
