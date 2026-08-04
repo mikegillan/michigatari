@@ -13,10 +13,9 @@ Built with [MapLibre GL JS](https://maplibre.org/) and
 
 ## Status
 
-Camera animations are fully authorable: capture keyframes on the map,
-arrange and time them, preview with scrubbing, and save/load projects.
-Animated map elements (markers, labels, routes, region outlines) and video
-export are in progress.
+The editor is feature-complete for authoring: keyframe camera animation plus
+animated markers, labels, flight-arc and road routes, and region outlines,
+with per-element styling and animation timing. Video export is in progress.
 
 ## Development
 
