@@ -34,8 +34,8 @@ export function EditorShell({ header, navbar, aside, main, footer }: EditorShell
           <Group gap="xs">{header}</Group>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="sm">{navbar}</AppShell.Navbar>
-      <AppShell.Aside p="sm">{aside}</AppShell.Aside>
+      <AppShell.Navbar p="sm" style={{ overflowY: 'auto' }}>{navbar}</AppShell.Navbar>
+      <AppShell.Aside p="sm" style={{ overflowY: 'auto' }}>{aside}</AppShell.Aside>
       <AppShell.Main style={{ display: 'flex', height: 'calc(100dvh - 48px - 72px)' }}>
         {main}
       </AppShell.Main>

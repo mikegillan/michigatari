@@ -71,7 +71,7 @@ export function createRegion(candidate: RegionCandidate, keyframeId: string): Re
     id: newId(),
     type: 'region',
     style: { color: '#6c5ce7', width: 2.5 },
-    data: { query: candidate.displayName, osmId: candidate.osmId, geometry: candidate.geometry },
+    data: { query: candidate.displayName, osmId: candidate.osmId, osmType: candidate.osmType, geometry: candidate.geometry },
     enter: defaultEnter('region', keyframeId),
   };
 }

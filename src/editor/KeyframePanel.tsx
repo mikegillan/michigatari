@@ -98,7 +98,7 @@ export function KeyframePanel() {
   };
 
   return (
-    <Stack gap="sm" style={{ overflowY: 'auto' }}>
+    <Stack gap="sm">
       <Text fw={600} size="sm">Keyframes</Text>
       {keyframes.length === 0 && (
         <Text size="xs" c="dimmed">Frame a view on the map, then press “Capture keyframe”.</Text>

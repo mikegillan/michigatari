@@ -54,6 +54,7 @@ export interface RouteData {
 export interface RegionData {
   query: string;
   osmId?: number;
+  osmType?: string;
   geometry: Polygon | MultiPolygon; // baked at author time
 }
 

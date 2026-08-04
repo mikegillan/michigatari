@@ -5,17 +5,25 @@ export const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 export interface RegionCandidate {
   displayName: string;
   osmId: number;
+  osmType: string;
   geometry: Polygon | MultiPolygon;
 }
 
 interface NominatimRow {
   display_name: string;
   osm_id: number;
+  osm_type: string;
   geojson?: { type: string };
 }
 
 export async function searchRegions(query: string): Promise<RegionCandidate[]> {
-  const params = new URLSearchParams({ q: query, format: 'jsonv2', polygon_geojson: '1', limit: '5' });
+  const params = new URLSearchParams({
+    q: query,
+    format: 'jsonv2',
+    polygon_geojson: '1',
+    polygon_threshold: '0.005',
+    limit: '5',
+  });
   const res = await fetch(`${NOMINATIM_BASE_URL}/search?${params}`);
   if (!res.ok) throw new Error(`Region search failed (${res.status}).`);
   const rows = (await res.json()) as NominatimRow[];
@@ -24,6 +32,7 @@ export async function searchRegions(query: string): Promise<RegionCandidate[]> {
     .map((r) => ({
       displayName: r.display_name,
       osmId: r.osm_id,
+      osmType: r.osm_type,
       geometry: r.geojson as unknown as Polygon | MultiPolygon,
     }));
 }

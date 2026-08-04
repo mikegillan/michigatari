@@ -28,6 +28,11 @@ it('sliceByProgress returns null at 0, the full line at 1, half at 0.5', () => {
   expect(lastLng).toBeCloseTo(5, 0);
 });
 
+it('returns null for a zero-length line instead of throwing', () => {
+  const degenerate = greatCircleArc([135, 35], [135, 35]);
+  expect(sliceByProgress(degenerate, 0.5)).toBeNull();
+});
+
 // Big square (0..10) and a small distant square (20..21), both CCW per GeoJSON.
 const square = (min: number, max: number): Position[] => [
   [min, min], [max, min], [max, max], [min, max], [min, min],

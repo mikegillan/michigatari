@@ -20,12 +20,14 @@ export function createFakeMap() {
   const layers: FakeLayer[] = [];
   const sources = new Map<string, FakeSource>();
   const calls: [op: string, id: string][] = [];
+  const jumpToCalls: unknown[] = [];
   const findLayer = (id: string) => layers.find((l) => l.id === id);
 
   return {
     layers,
     sources,
     calls,
+    jumpToCalls,
     getStyle: () => ({ layers }),
     addSource: (id: string, spec: Record<string, unknown> = {}) => {
       calls.push(['addSource', id]);
@@ -60,8 +62,9 @@ export function createFakeMap() {
       const layer = findLayer(layerId);
       if (layer) layer.layout = { ...layer.layout, [prop]: value };
     },
-    jumpTo: (_opts: unknown) => {
+    jumpTo: (opts: unknown) => {
       calls.push(['jumpTo', '']);
+      jumpToCalls.push(opts);
     },
   };
 }
