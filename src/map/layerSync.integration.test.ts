@@ -85,14 +85,18 @@ it('restyles a surviving route\'s line-color and line-width', () => {
   expect(layer?.paint?.['line-width']).toBe(7);
 });
 
-it('restyles a surviving region\'s fill source with the element\'s geometry', () => {
+it('restyles a surviving region\'s fill source with the LATEST element geometry, not the creation-time one', () => {
   const fake = createFakeMap();
   const el = region();
-  syncElementLayers(asMap(fake), project([el]));
-  syncElementLayers(asMap(fake), project([el])); // still present -> restyle path
+  syncElementLayers(asMap(fake), project([el])); // create path -> seeds fill source with el.data.geometry
+  const moved: RegionElement = {
+    ...el,
+    data: { ...el.data, geometry: { type: 'Polygon', coordinates: [[[1, 1], [2, 1], [2, 2], [1, 1]]] } },
+  };
+  syncElementLayers(asMap(fake), project([moved])); // still present -> restyle path, new geometry
   expect(fake.sources.get('el-rg1-fill')?.data).toEqual({
     type: 'FeatureCollection',
-    features: [{ type: 'Feature', properties: {}, geometry: el.data.geometry }],
+    features: [{ type: 'Feature', properties: {}, geometry: moved.data.geometry }],
   });
 });
 
@@ -112,11 +116,20 @@ it('sets marker radius to size * max(0, scale)', () => {
   expect(fake.layers.find((l) => l.id === 'el-mk1')?.paint?.['circle-radius']).toBeCloseTo(11);
 });
 
-it('sets EMPTY data on an invisible element\'s source', () => {
+it('sets EMPTY data on an invisible element\'s source via a LATER setData call, not just creation-time state', () => {
   const fake = createFakeMap();
   const el = marker();
-  createElementLayers(asMap(fake), el);
-  const states: Record<string, ElementScene> = { mk1: { visible: false, opacity: 0, scale: 0, progress: 0 } };
-  applyElements(asMap(fake), project([el]), states);
+  createElementLayers(asMap(fake), el); // addSource seeds data EMPTY -> must not be mistaken for the real assertion
+  const visible: Record<string, ElementScene> = { mk1: { visible: true, opacity: 1, scale: 1, progress: 1 } };
+  applyElements(asMap(fake), project([el]), visible);
+  expect(fake.sources.get('el-mk1')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: el.data.lngLat } }],
+  });
+
+  const invisible: Record<string, ElementScene> = { mk1: { visible: false, opacity: 0, scale: 0, progress: 0 } };
+  applyElements(asMap(fake), project([el]), invisible);
+  const setDataCalls = fake.calls.filter(([op, id]) => op === 'setData' && id === 'el-mk1');
+  expect(setDataCalls).toHaveLength(2); // one per applyElements call, excluding the creation-time addSource
   expect(fake.sources.get('el-mk1')?.data).toEqual({ type: 'FeatureCollection', features: [] });
 });

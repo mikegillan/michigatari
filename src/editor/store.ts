@@ -3,6 +3,12 @@ import type { CameraPose, Element, Keyframe, Project, Settings } from '../engine
 
 export const DEFAULT_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
+// crypto.randomUUID requires a secure context; plain-HTTP LAN hosting gets the fallback.
+export function newId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function blankProject(): Project {
   return {
     version: 1,
@@ -51,7 +57,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
     set((s) => ({ project: { ...s.project, settings: { ...s.project.settings, ...patch } } })),
 
   addKeyframe: (camera) => {
-    const id = crypto.randomUUID();
+    const id = newId();
     set((s) => ({
       project: {
         ...s.project,

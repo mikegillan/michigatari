@@ -1,5 +1,5 @@
 import { EditorShell } from './editor/AppShell';
-import { SettingsPanel } from './editor/SettingsPanel';
+import { AsidePanel } from './editor/AsidePanel';
 import { MapView } from './editor/MapView';
 import { KeyframePanel } from './editor/KeyframePanel';
 import { PreviewBar } from './editor/PreviewBar';
@@ -10,7 +10,7 @@ export default function App() {
     <EditorShell
       header={<ProjectMenu />}
       navbar={<KeyframePanel />}
-      aside={<SettingsPanel />}
+      aside={<AsidePanel />}
       main={<MapView />}
       footer={<PreviewBar />}
     />

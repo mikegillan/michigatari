@@ -1,5 +1,5 @@
 import { beforeEach, expect, it } from 'vitest';
-import { blankProject, useEditorStore } from './store';
+import { blankProject, newId, useEditorStore } from './store';
 import type { MarkerElement } from '../engine/types';
 
 beforeEach(() => {
@@ -66,6 +66,11 @@ it('deleting the last keyframe leaves bindings dangling (hidden by engine contra
   const st = useEditorStore.getState();
   expect(st.project.keyframes).toHaveLength(0);
   expect(st.project.elements[0].enter.keyframeId).toBe(a); // dangling, engine hides it
+});
+
+it('newId produces unique ids', () => {
+  const ids = new Set(Array.from({ length: 100 }, () => newId()));
+  expect(ids.size).toBe(100);
 });
 
 it('newProject resets project and playback state', () => {
