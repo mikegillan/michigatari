@@ -10,6 +10,10 @@ export interface SceneState {
   elements: Record<string, ElementScene>;
 }
 
+/**
+ * Throws if the project has no keyframes — callers with possibly-empty
+ * projects (e.g. a fresh editor session) must guard before calling.
+ */
 export function sceneAt(
   project: Project,
   timeMs: number,

@@ -47,12 +47,17 @@ it('ignores the last keyframe transition entirely', () => {
 
 it('segmentAt finds the right segment and clamps the edges', () => {
   const tl = computeTimeline(two);
-  expect(segmentAt(tl, 0).kind).toBe('hold');
-  expect(segmentAt(tl, 1999).kind).toBe('hold');
-  expect(segmentAt(tl, 2000).kind).toBe('transition');
-  expect(segmentAt(tl, 4999).kind).toBe('transition');
+  expect(segmentAt(tl, 0)!.kind).toBe('hold');
+  expect(segmentAt(tl, 1999)!.kind).toBe('hold');
+  expect(segmentAt(tl, 2000)!.kind).toBe('transition');
+  expect(segmentAt(tl, 4999)!.kind).toBe('transition');
   expect(segmentAt(tl, 5000)).toMatchObject({ kind: 'hold', keyframeIndex: 1 });
   expect(segmentAt(tl, 6000)).toMatchObject({ kind: 'hold', keyframeIndex: 1 }); // t == total
-  expect(segmentAt(tl, -50).kind).toBe('hold');
+  expect(segmentAt(tl, -50)!.kind).toBe('hold');
   expect(segmentAt(tl, 99999)).toMatchObject({ kind: 'hold', keyframeIndex: 1 });
+});
+
+it('segmentAt returns undefined for an empty timeline', () => {
+  const tl = computeTimeline(proj([]));
+  expect(segmentAt(tl, 0)).toBeUndefined();
 });
