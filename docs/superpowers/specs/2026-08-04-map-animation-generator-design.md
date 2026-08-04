@@ -34,8 +34,8 @@ Deployable to GitHub Pages. Open source under AGPL-3.0.
 2. Capture the current view as a keyframe; update an existing keyframe from
    the current view; reorder and delete keyframes.
 3. Per keyframe: hold duration, transition duration to the next keyframe, and
-   easing preset (linear, ease-in-out cubic, and similar presets — no custom
-   curve editor).
+   easing preset. Presets (used everywhere easing applies): linear, ease-in,
+   ease-out, ease-in-out (cubic). No custom curve editor.
 4. Elements, each with configurable style and an entrance (and optional exit)
    bound to a keyframe with per-element delay and duration:
    - **Marker** — point pin; entrance: pop (scale + fade overshoot) or fade.
@@ -48,6 +48,10 @@ Deployable to GitHub Pages. Open source under AGPL-3.0.
      traced; remaining rings fade in with the fill.
 
    Exit animation for all element types: fade.
+
+   Element enter/exit animations take an easing preset from the same list
+   (§3.3), defaulting to ease-in-out. Pop's overshoot curve is inherent to
+   the pop animation itself, not an easing choice.
 5. Live preview: play/pause from any point, and a scrubber over the full
    timeline that shows the exact scene at any instant (including mid-flight
    camera and partially drawn routes).
@@ -134,8 +138,8 @@ migrate, unknown versions are rejected with a clear message.
       "type": "marker",          // "marker" | "label" | "route" | "region"
       "style": {},                // per-type: color, size, font, line width…
       "data": {},                 // per-type, see below
-      "enter": { "keyframeId": "kf1", "animation": "pop", "delayMs": 500, "durationMs": 400 },
-      "exit":  { "keyframeId": "kf3", "animation": "fade", "delayMs": 0, "durationMs": 300 }
+      "enter": { "keyframeId": "kf1", "animation": "pop", "delayMs": 500, "durationMs": 400, "easing": "easeInOut" },
+      "exit":  { "keyframeId": "kf3", "animation": "fade", "delayMs": 0, "durationMs": 300, "easing": "easeInOut" }
     }
   ]
 }
@@ -182,7 +186,8 @@ at full output resolution with identical timing (same engine).
   easing preset is applied to `t` before path evaluation.
 - **Element evaluators:** per animation type, `(elementTiming, timeMs) →
   properties` — opacity for fades, scale for pop, and `progress` 0–1 for
-  draw-on/trace-on. Draw-on slices the baked geometry at
+  draw-on/trace-on. The animation's easing preset is applied to its local
+  0–1 time before evaluation. Draw-on slices the baked geometry at
   `progress × totalLength` (Turf), identical in preview and export.
 - The React layer applies a `SceneState` to MapLibre (`jumpTo` + set layer
   properties/geometries). One code path for preview, scrub, and export.
