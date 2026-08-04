@@ -61,7 +61,9 @@ export function ExportDialog() {
     }
 
     cancelRef.current = false;
-    setPhase({ kind: 'exporting', frame: 0, total: 1, startedAt: performance.now() });
+    const timeline = computeTimeline(project);
+    const total = frameCount(timeline.totalMs, project.settings.fps);
+    setPhase({ kind: 'exporting', frame: -1, total, startedAt: performance.now() });
     try {
       const result = await exportVideo(project, {
         format,
@@ -70,7 +72,7 @@ export function ExportDialog() {
         onProgress: (frame, total) =>
           setPhase((p) => (p.kind === 'exporting' ? { ...p, frame, total } : p)),
       });
-      if (cancelRef.current) {
+      if (!result.completed) {
         notifications.show({ color: 'yellow', title: 'Export cancelled', message: 'No file was written.' });
       } else {
         if (result.blob) {
@@ -101,9 +103,11 @@ export function ExportDialog() {
   return (
     <>
       <Tooltip label="Capture a keyframe first" disabled={hasKeyframes}>
-        <Button size="xs" variant="light" disabled={!hasKeyframes} onClick={() => void open()}>
-          Export
-        </Button>
+        <span style={{ display: 'inline-block' }}>
+          <Button size="xs" variant="light" disabled={!hasKeyframes} onClick={() => void open()}>
+            Export
+          </Button>
+        </span>
       </Tooltip>
       <Modal opened={opened} onClose={close} title="Export video" closeOnClickOutside={phase.kind !== 'exporting'} withCloseButton={phase.kind !== 'exporting'}>
         <Stack gap="sm">

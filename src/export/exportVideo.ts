@@ -11,6 +11,7 @@ export type ExportTarget =
 
 export interface ExportResult {
   blob: Blob | null;
+  completed: boolean;
 }
 
 interface VideoMuxer {
@@ -109,7 +110,7 @@ export async function exportVideo(
     if (cancelled) {
       if (enc.state !== 'closed') enc.close();
       if (target.kind === 'stream') await target.stream.abort?.();
-      return { blob: null };
+      return { blob: null, completed: false };
     }
 
     await enc.flush();
@@ -119,10 +120,10 @@ export async function exportVideo(
 
     if (target.kind === 'stream') {
       await target.stream.close();
-      return { blob: null };
+      return { blob: null, completed: true };
     }
     const buffer = takeBuffer();
-    return { blob: buffer ? new Blob([buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' }) : null };
+    return { blob: buffer ? new Blob([buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' }) : null, completed: true };
   } catch (err) {
     try {
       if (encoder && encoder.state !== 'closed') encoder.close();
