@@ -206,6 +206,12 @@ at full output resolution with identical timing (same engine).
 3. Mux to MP4 (H.264) or WebM (VP9), streaming chunks to disk via the File
    System Access API so the full video never sits in memory.
 4. Progress modal: frame counter, elapsed/ETA, cancel.
+5. (Amended 2026-08-04) OSM/OpenFreeMap attribution is burned into every
+   exported frame via a 2D composite pass — the map's DOM attribution
+   control cannot reach the captured canvas pixels. Tile *failures* (not
+   just stalls) also trigger the retry-then-stop path: MapLibre reports
+   errored tiles as "loaded", so the exporter tracks resource errors
+   explicitly and never silently encodes a frame with missing tiles.
 
 ## 10. Error Handling
 
