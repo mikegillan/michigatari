@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CameraPose, Element, Keyframe, Project, Settings } from '../engine/types';
+import type { CameraPose, Element, Keyframe, LngLat, Project, Settings } from '../engine/types';
 
 export const DEFAULT_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -20,12 +20,19 @@ export function blankProject(): Project {
 
 export type EditorMode = 'edit' | 'preview';
 
+export type PlacingState =
+  | { kind: 'marker' }
+  | { kind: 'label' }
+  | { kind: 'route'; mode: 'arc' | 'road'; waypoints: LngLat[] }
+  | null;
+
 interface EditorStore {
   project: Project;
   mode: EditorMode;
   playing: boolean;
   timeMs: number;
   thumbnails: Record<string, string>;
+  placing: PlacingState;
 
   loadProject(project: Project): void;
   newProject(): void;
@@ -41,6 +48,8 @@ interface EditorStore {
   setMode(mode: EditorMode): void;
   setPlaying(playing: boolean): void;
   setTimeMs(timeMs: number): void;
+  setPlacing(placing: PlacingState): void;
+  appendPlacingWaypoint(lngLat: LngLat): void;
 }
 
 export const useEditorStore = create<EditorStore>((set) => ({
@@ -49,9 +58,12 @@ export const useEditorStore = create<EditorStore>((set) => ({
   playing: false,
   timeMs: 0,
   thumbnails: {},
+  placing: null,
 
-  loadProject: (project) => set({ project, mode: 'edit', playing: false, timeMs: 0, thumbnails: {} }),
-  newProject: () => set({ project: blankProject(), mode: 'edit', playing: false, timeMs: 0, thumbnails: {} }),
+  loadProject: (project) =>
+    set({ project, mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null }),
+  newProject: () =>
+    set({ project: blankProject(), mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null }),
 
   updateSettings: (patch) =>
     set((s) => ({ project: { ...s.project, settings: { ...s.project.settings, ...patch } } })),
@@ -121,7 +133,14 @@ export const useEditorStore = create<EditorStore>((set) => ({
   deleteElement: (id) =>
     set((s) => ({ project: { ...s.project, elements: s.project.elements.filter((el) => el.id !== id) } })),
 
-  setMode: (mode) => set({ mode }),
+  setMode: (mode) => set({ mode, ...(mode === 'preview' ? { placing: null } : {}) }),
   setPlaying: (playing) => set({ playing }),
   setTimeMs: (timeMs) => set({ timeMs }),
+  setPlacing: (placing) => set({ placing }),
+  appendPlacingWaypoint: (lngLat) =>
+    set((s) =>
+      s.placing?.kind === 'route'
+        ? { placing: { ...s.placing, waypoints: [...s.placing.waypoints, lngLat] } }
+        : s,
+    ),
 }));

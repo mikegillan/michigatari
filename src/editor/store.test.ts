@@ -82,3 +82,21 @@ it('newProject resets project and playback state', () => {
   expect(st.timeMs).toBe(0);
   expect(st.mode).toBe('edit');
 });
+
+it('placing state arms, appends route waypoints, and clears', () => {
+  const s = useEditorStore.getState();
+  s.setPlacing({ kind: 'route', mode: 'road', waypoints: [] });
+  useEditorStore.getState().appendPlacingWaypoint([1, 2]);
+  useEditorStore.getState().appendPlacingWaypoint([3, 4]);
+  let placing = useEditorStore.getState().placing;
+  expect(placing).toEqual({ kind: 'route', mode: 'road', waypoints: [[1, 2], [3, 4]] });
+  useEditorStore.getState().appendPlacingWaypoint([5, 6]);
+  useEditorStore.getState().setPlacing(null);
+  expect(useEditorStore.getState().placing).toBeNull();
+});
+
+it('appendPlacingWaypoint is a no-op outside route placing', () => {
+  useEditorStore.getState().setPlacing({ kind: 'marker' });
+  useEditorStore.getState().appendPlacingWaypoint([1, 2]);
+  expect(useEditorStore.getState().placing).toEqual({ kind: 'marker' });
+});

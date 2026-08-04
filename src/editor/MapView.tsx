@@ -9,6 +9,7 @@ import { syncElementLayers } from '../map/layerSync';
 import { applyElements } from '../map/applyScene';
 import { allShownStates } from './editorScene';
 import { CaptureBar } from './CaptureBar';
+import { createArcRoute, createLabel, createMarker } from './elementDefaults';
 
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +37,29 @@ export function MapView() {
         title: 'Map failed to load',
         message: String((e as { error?: Error }).error?.message ?? 'Check the style URL and your network connection.'),
       });
+    });
+    map.on('click', (e) => {
+      const { placing, mode: m, project, addElement, setPlacing, appendPlacingWaypoint } = useEditorStore.getState();
+      if (!placing || m === 'preview') return;
+      const lngLat: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+      const firstKf = project.keyframes[0]?.id;
+      if (!firstKf) return; // add buttons are disabled without keyframes; belt and suspenders
+      if (placing.kind === 'marker') {
+        addElement(createMarker(lngLat, firstKf));
+        setPlacing(null);
+      } else if (placing.kind === 'label') {
+        addElement(createLabel(lngLat, firstKf));
+        setPlacing(null);
+      } else if (placing.kind === 'route' && placing.mode === 'arc') {
+        if (placing.waypoints.length === 0) {
+          appendPlacingWaypoint(lngLat);
+        } else {
+          addElement(createArcRoute(placing.waypoints[0], lngLat, firstKf));
+          setPlacing(null);
+        }
+      } else if (placing.kind === 'route' && placing.mode === 'road') {
+        appendPlacingWaypoint(lngLat); // Finish button in the panel completes it (Task 6)
+      }
     });
     map.on('load', () => {
       if (cancelled) return;
@@ -95,6 +119,12 @@ export function MapView() {
   useEffect(() => {
     mapRef.current?.resize();
   }, [aspect]);
+
+  const placing = useEditorStore((s) => s.placing);
+  useEffect(() => {
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = placing ? 'crosshair' : '';
+  }, [placing]);
 
   return (
     <div className="map-stage">
