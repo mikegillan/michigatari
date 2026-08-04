@@ -7,6 +7,7 @@ import { mapRef } from './mapRef';
 import { syncElementLayers } from '../map/layerSync';
 import { applyElements } from '../map/applyScene';
 import { allShownStates } from './editorScene';
+import { CaptureBar } from './CaptureBar';
 
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,6 +90,7 @@ export function MapView() {
       <div className="map-frame" data-aspect={aspect}>
         <div ref={containerRef} className="map-canvas" />
         {mode === 'preview' && <div className="map-block-overlay" />}
+        <CaptureBar />
       </div>
     </div>
   );
