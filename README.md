@@ -9,12 +9,15 @@ Built with [MapLibre GL JS](https://maplibre.org/) and
 
 ## Status
 
-Engine + demo animation working; the interactive editor and video export are in progress.
+Camera animations are fully authorable: capture keyframes on the map,
+arrange and time them, preview with scrubbing, and save/load projects.
+Animated map elements (markers, labels, routes, region outlines) and video
+export are in progress.
 
 ## Development
 
     npm install
-    npm run dev    # dev server with a looping demo animation
+    npm run dev    # the editor
     npm test       # engine unit tests
     npm run build  # production build
 
