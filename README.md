@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/icon.png" alt="Michigatari icon" width="128">
+</p>
+
 # Michigatari
 
 **Michigatari** ("path + story" in Japanese) creates animated map sequences for travel vlogs: capture keyframes on an
