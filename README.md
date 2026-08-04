@@ -18,9 +18,10 @@ others, swap in your own providers (the base URLs live in `src/providers/`).
 
 ## Status
 
-The editor is feature-complete for authoring: keyframe camera animation plus
-animated markers, labels, flight-arc and road routes, and region outlines,
-with per-element styling and animation timing. Video export is in progress.
+Feature-complete v1: author keyframe camera animation with animated markers,
+labels, routes, and region outlines, preview with scrubbing, and export to
+MP4 (H.264) or WebM (VP9) — 1080p/1440p/4K, 30 or 60 fps, widescreen or
+vertical. Everything runs in the browser.
 
 ## Development
 
