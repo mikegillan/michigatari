@@ -17,6 +17,7 @@ export function RegionSearch() {
   useEffect(() => {
     if (debounced.trim().length < 2) {
       setResults([]);
+      setSearching(false);
       return;
     }
     let stale = false;
