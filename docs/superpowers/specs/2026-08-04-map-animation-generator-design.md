@@ -161,9 +161,13 @@ optional — omitted means the element persists to the end.
 
 ## 7. Editor UI
 
-- **Center: live map.** Free camera manipulation. A letterbox overlay marks
-  the export frame for the chosen aspect ratio. "Capture keyframe" snapshots
-  the camera; "Update" overwrites an existing keyframe from the current view.
+- **Center: live map.** Free camera manipulation. The map canvas itself is
+  letterboxed to the chosen aspect ratio, so the visible frame IS the export
+  frame (amended 2026-08-04: implemented as a letterboxed container rather
+  than an overlay on a full-bleed map — this makes editor composition match
+  export exactly via the reference-viewport zoom offset). "Capture keyframe"
+  snapshots the camera; "Update" overwrites an existing keyframe from the
+  current view.
 - **Left sidebar: keyframe list.** Ordered cards (thumbnail, hold duration,
   transition duration, easing). Drag to reorder; click to jump the camera to
   that view.
