@@ -1,6 +1,7 @@
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import type { FeatureCollection, Geometry } from 'geojson';
-import type { Project } from '../engine/types';
+import type { Element, Project } from '../engine/types';
+import type { ElementScene } from '../engine/elements';
 import type { SceneState } from '../engine/scene';
 import { sliceByProgress, traceRing } from '../engine/geometry';
 
@@ -12,65 +13,65 @@ function collection(geometry: Geometry | null, properties: Record<string, unknow
     : EMPTY;
 }
 
-export function ensureElementLayers(map: MapLibreMap, project: Project): void {
-  for (const el of project.elements) {
-    const id = `el-${el.id}`;
-    if (map.getSource(id)) continue;
-    map.addSource(id, { type: 'geojson', data: EMPTY });
-    const color = String(el.style.color ?? '#d63031');
-    switch (el.type) {
-      case 'marker':
-        map.addLayer({
-          id, type: 'circle', source: id,
-          paint: {
-            'circle-color': color, 'circle-radius': 8, 'circle-opacity': 0,
-            'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0,
-          },
-        });
-        break;
-      case 'label':
-        map.addLayer({
-          id, type: 'symbol', source: id,
-          layout: {
-            'text-field': ['get', 'text'],
-            'text-size': Number(el.style.size ?? 16),
-            // hosted by OpenFreeMap (the default styleUrl); the MapLibre default stack 404s there
-            'text-font': ['Noto Sans Regular'],
-          },
-          paint: { 'text-color': color, 'text-opacity': 0, 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
-        });
-        break;
-      case 'route':
-        map.addLayer({
-          id, type: 'line', source: id,
-          paint: { 'line-color': color, 'line-width': Number(el.style.width ?? 3) },
-        });
-        break;
-      case 'region':
-        map.addSource(`${id}-fill`, { type: 'geojson', data: collection(el.data.geometry) });
-        map.addLayer({
-          id: `${id}-fill`, type: 'fill', source: `${id}-fill`,
-          paint: { 'fill-color': color, 'fill-opacity': 0 },
-        });
-        map.addLayer({
-          id, type: 'line', source: id,
-          paint: { 'line-color': color, 'line-width': Number(el.style.width ?? 2.5) },
-        });
-        break;
-    }
+export function createElementLayers(map: MapLibreMap, el: Element): void {
+  const id = `el-${el.id}`;
+  map.addSource(id, { type: 'geojson', data: EMPTY });
+  const color = String(el.style.color ?? '#d63031');
+  switch (el.type) {
+    case 'marker':
+      map.addLayer({
+        id, type: 'circle', source: id,
+        paint: {
+          'circle-color': color, 'circle-radius': Number(el.style.size ?? 8), 'circle-opacity': 0,
+          'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0,
+        },
+      });
+      break;
+    case 'label':
+      map.addLayer({
+        id, type: 'symbol', source: id,
+        layout: {
+          'text-field': ['get', 'text'],
+          'text-size': Number(el.style.size ?? 16),
+          // hosted by OpenFreeMap (the default styleUrl); the MapLibre default stack 404s there
+          'text-font': ['Noto Sans Regular'],
+        },
+        paint: { 'text-color': color, 'text-opacity': 0, 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
+      });
+      break;
+    case 'route':
+      map.addLayer({
+        id, type: 'line', source: id,
+        paint: { 'line-color': color, 'line-width': Number(el.style.width ?? 3) },
+      });
+      break;
+    case 'region':
+      map.addSource(`${id}-fill`, { type: 'geojson', data: collection(el.data.geometry) });
+      map.addLayer({
+        id: `${id}-fill`, type: 'fill', source: `${id}-fill`,
+        paint: { 'fill-color': color, 'fill-opacity': 0 },
+      });
+      map.addLayer({
+        id, type: 'line', source: id,
+        paint: { 'line-color': color, 'line-width': Number(el.style.width ?? 2.5) },
+      });
+      break;
   }
 }
 
-export function applyScene(map: MapLibreMap, project: Project, scene: SceneState): void {
-  map.jumpTo({
-    center: scene.camera.center,
-    zoom: scene.camera.zoom,
-    bearing: scene.camera.bearing,
-    pitch: scene.camera.pitch,
-  });
-
+export function ensureElementLayers(map: MapLibreMap, project: Project): void {
   for (const el of project.elements) {
-    const state = scene.elements[el.id];
+    if (!map.getSource(`el-${el.id}`)) createElementLayers(map, el);
+  }
+}
+
+export function applyElements(
+  map: MapLibreMap,
+  project: Project,
+  elements: Record<string, ElementScene>,
+): void {
+  for (const el of project.elements) {
+    const state = elements[el.id];
     const id = `el-${el.id}`;
     const source = map.getSource(id) as GeoJSONSource | undefined;
     if (!source || !state) continue;
@@ -80,7 +81,7 @@ export function applyScene(map: MapLibreMap, project: Project, scene: SceneState
         source.setData(state.visible ? collection({ type: 'Point', coordinates: el.data.lngLat }) : EMPTY);
         map.setPaintProperty(id, 'circle-opacity', state.opacity);
         map.setPaintProperty(id, 'circle-stroke-opacity', state.opacity);
-        map.setPaintProperty(id, 'circle-radius', 8 * Math.max(0, state.scale));
+        map.setPaintProperty(id, 'circle-radius', Number(el.style.size ?? 8) * Math.max(0, state.scale));
         break;
       case 'label':
         source.setData(
@@ -106,4 +107,14 @@ export function applyScene(map: MapLibreMap, project: Project, scene: SceneState
       }
     }
   }
+}
+
+export function applyScene(map: MapLibreMap, project: Project, scene: SceneState): void {
+  map.jumpTo({
+    center: scene.camera.center,
+    zoom: scene.camera.zoom,
+    bearing: scene.camera.bearing,
+    pitch: scene.camera.pitch,
+  });
+  applyElements(map, project, scene.elements);
 }
