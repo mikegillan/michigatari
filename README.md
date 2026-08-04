@@ -9,7 +9,8 @@ interactive map, add animated markers, labels, routes, and region outlines,
 and export the result as video. Runs entirely in the browser.
 
 Built with [MapLibre GL JS](https://maplibre.org/) and
-[OpenFreeMap](https://openfreemap.org/) tiles. Developed with Claude.
+[OpenFreeMap](https://openfreemap.org/) tiles, with the help of
+[Claude Fable](https://claude.com) — see [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 Region search uses [Nominatim](https://nominatim.org/) and road routing uses
 the public [OSRM](https://project-osrm.org/) demo server — community-run OSM
