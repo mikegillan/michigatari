@@ -86,3 +86,12 @@ it('matches golden mid-flight values (locks the van Wijk-Nuij constants)', () =>
   expect(mid.center[0]).toBeCloseTo(138.3467, 3);
   expect(mid.center[1]).toBeCloseTo(35.3513, 3);
 });
+
+it('stays finite on a near-degenerate zoom-out flight', () => {
+  const a: CameraPose = { center: [139.77, 35.68], zoom: 10, bearing: 0, pitch: 0 };
+  const b: CameraPose = { center: [139.77 + 1e-8, 35.68], zoom: 8, bearing: 0, pitch: 0 };
+  const mid = interpolateCamera(a, b, 0.5, VP);
+  expect(Number.isFinite(mid.center[0])).toBe(true);
+  expect(Number.isFinite(mid.center[1])).toBe(true);
+  expect(mid.zoom).toBeCloseTo(9); // falls back to linear zoom
+});

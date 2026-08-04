@@ -32,6 +32,15 @@ function shortestBearingDelta(from: number, to: number): number {
 // MapLibre's default.
 const RHO = 1.42;
 
+// Derived camera poses must not alias caller/project state (React editor
+// mutation hazard) — always hand back a fresh object with a copied center.
+const clonePose = (p: CameraPose): CameraPose => ({
+  center: [p.center[0], p.center[1]],
+  zoom: p.zoom,
+  bearing: p.bearing,
+  pitch: p.pitch,
+});
+
 /**
  * Camera pose at fraction t (0–1, ALREADY eased) along the van Wijk–Nuij
  * flight path. `viewport` is the nominal output size in px — pass
@@ -43,8 +52,8 @@ export function interpolateCamera(
   t: number,
   viewport: { width: number; height: number },
 ): CameraPose {
-  if (t <= 0) return from;
-  if (t >= 1) return to;
+  if (t <= 0) return clonePose(from);
+  if (t >= 1) return clonePose(to);
 
   const bearing = from.bearing + shortestBearingDelta(from.bearing, to.bearing) * t;
   const pitch = from.pitch + (to.pitch - from.pitch) * t;
@@ -79,11 +88,19 @@ export function interpolateCamera(
     };
     const r0 = r(0);
     const S = (r(1) - r0) / RHO; // total path length in flight-space
-    const s = t * S;
-    const w = Math.cosh(r0) / Math.cosh(r0 + RHO * s); // width factor: >1 means zoomed out
-    const u = (w0 * (Math.cosh(r0) * Math.tanh(r0 + RHO * s) - Math.sinh(r0))) / rho2;
-    zoom = from.zoom + Math.log2(1 / w);
-    un = Math.min(1, Math.max(0, u / u1));
+    if (!isFinite(S)) {
+      // Near-degenerate ground distance: b(i) grows huge and
+      // sqrt(b*b+1)-b cancels to 0, so r → -Infinity and S → NaN/Infinity.
+      // Fall back to a pure zoom with the center pinned, same as u1 < 1e-6.
+      zoom = from.zoom + (to.zoom - from.zoom) * t;
+      un = t;
+    } else {
+      const s = t * S;
+      const w = Math.cosh(r0) / Math.cosh(r0 + RHO * s); // width factor: >1 means zoomed out
+      const u = (w0 * (Math.cosh(r0) * Math.tanh(r0 + RHO * s) - Math.sinh(r0))) / rho2;
+      zoom = from.zoom + Math.log2(1 / w);
+      un = Math.min(1, Math.max(0, u / u1));
+    }
   }
 
   const cx = p0.x + (p1.x - p0.x) * un;
@@ -97,9 +114,9 @@ export function cameraAt(
   timeMs: number,
   viewport: { width: number; height: number },
 ): CameraPose {
-  if (proj.keyframes.length === 0) throw new Error('Project has no keyframes.');
   const seg = segmentAt(timeline, timeMs);
-  if (seg.kind === 'hold') return proj.keyframes[seg.keyframeIndex].camera;
+  if (!seg) throw new Error('Project has no keyframes.');
+  if (seg.kind === 'hold') return clonePose(proj.keyframes[seg.keyframeIndex].camera);
   const t = (Math.min(timeMs, seg.endMs) - seg.startMs) / (seg.endMs - seg.startMs);
   return interpolateCamera(
     proj.keyframes[seg.fromIndex].camera,

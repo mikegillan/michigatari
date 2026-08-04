@@ -47,7 +47,7 @@ export function computeTimeline(project: Project): Timeline {
   return { totalMs: cursor, segments, arrivalMs };
 }
 
-export function segmentAt(timeline: Timeline, timeMs: number): Segment {
+export function segmentAt(timeline: Timeline, timeMs: number): Segment | undefined {
   const t = Math.min(Math.max(timeMs, 0), timeline.totalMs);
   // zero-duration segments (holdMs 0) never match t >= start && t < end, so
   // they are skipped — which is the behavior we want.
