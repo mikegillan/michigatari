@@ -20,8 +20,10 @@
     "@mantine/notifications": "^9.5.1",
     "@turf/turf": "^7.4.0",
     "maplibre-gl": "^6.1.0",
+    "mp4-muxer": "^5.2.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "webm-muxer": "^5.1.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
