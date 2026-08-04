@@ -1,6 +1,6 @@
-# Map Animation Generator
+# Michigatari
 
-Create animated map sequences for travel vlogs: capture keyframes on an
+**Michigatari** ("path + story" in Japanese) creates animated map sequences for travel vlogs: capture keyframes on an
 interactive map, add animated markers, labels, routes, and region outlines,
 and export the result as video. Runs entirely in the browser.
 
