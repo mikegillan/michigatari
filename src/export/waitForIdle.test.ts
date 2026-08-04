@@ -39,5 +39,5 @@ it('cancels the timeout when idle fires first', async () => {
   const p = waitForIdle(map, 10_000);
   map.fireIdle();
   await p;
-  vi.advanceTimersByTime(20_000); // must not throw or double-settle
+  expect(vi.getTimerCount()).toBe(0); // the pending timeout was cancelled
 });
