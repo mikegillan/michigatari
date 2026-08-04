@@ -32,8 +32,8 @@ function createMuxer(
         : new Mp4Muxer.ArrayBufferTarget();
     const muxer = new Mp4Muxer.Muxer({
       target: muxTarget,
-      video: { codec: 'avc', width, height },
-      fastStart: target.kind === 'buffer' ? 'in-memory' : false,
+      video: { codec: 'avc', width, height, frameRate: project.settings.fps },
+      fastStart: false,
       firstTimestampBehavior: 'offset',
     });
     return {
@@ -67,13 +67,13 @@ export async function exportVideo(
 ): Promise<ExportResult> {
   const { format, target, onProgress, shouldCancel } = options;
   const fps = project.settings.fps;
-  const { muxer, takeBuffer } = createMuxer(format, project, target);
 
   let encoderError: Error | null = null;
   let encoder: VideoEncoder | null = null;
   let exportMap: ReturnType<typeof createExportMap> | null = null;
   let cancelled = false;
   try {
+    const { muxer, takeBuffer } = createMuxer(format, project, target);
     encoder = new VideoEncoder({
       output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
       error: (err) => {
@@ -82,6 +82,15 @@ export async function exportVideo(
     });
     encoder.configure(buildEncoderConfig(format, project.settings));
     const enc = encoder;
+
+    // The DOM attribution control can't reach the exported canvas pixels, so
+    // burn OSM attribution into every frame via a composite 2D canvas.
+    const { width, height } = exportDimensions(project.settings);
+    const composite = document.createElement('canvas');
+    composite.width = width;
+    composite.height = height;
+    const ctx = composite.getContext('2d')!;
+    const fontPx = Math.max(11, Math.round(height * 0.015));
 
     exportMap = createExportMap(project);
     await renderFrames(exportMap.map, project, {
@@ -92,12 +101,43 @@ export async function exportVideo(
       onFrame: async (canvas, i, total) => {
         if (encoderError) throw encoderError;
         if (enc.encodeQueueSize > 4) {
-          await new Promise<void>((resolve) =>
-            enc.addEventListener('dequeue', () => resolve(), { once: true }),
-          );
+          await new Promise<void>((resolve) => {
+            let iv = 0;
+            const onDequeue = () => {
+              cleanup();
+              resolve();
+            };
+            const cleanup = () => {
+              enc.removeEventListener('dequeue', onDequeue);
+              clearInterval(iv);
+            };
+            enc.addEventListener('dequeue', onDequeue);
+            iv = window.setInterval(() => {
+              if (encoderError) {
+                cleanup();
+                resolve();
+              }
+            }, 250);
+          });
           if (encoderError) throw encoderError;
         }
-        const frame = new VideoFrame(canvas, { timestamp: frameTimestampUs(i, fps) });
+
+        ctx.drawImage(canvas, 0, 0);
+        const label = '© OpenStreetMap contributors · OpenFreeMap';
+        ctx.font = `${fontPx}px sans-serif`;
+        const pad = Math.round(fontPx * 0.5);
+        const w = ctx.measureText(label).width + pad * 2;
+        const h = fontPx + pad * 2;
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.fillRect(width - w, height - h, w, h);
+        ctx.fillStyle = '#333';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, width - w + pad, height - h / 2);
+
+        const frame = new VideoFrame(composite, {
+          timestamp: frameTimestampUs(i, fps),
+          duration: Math.round(1_000_000 / fps),
+        });
         try {
           enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
         } finally {
@@ -109,7 +149,7 @@ export async function exportVideo(
 
     if (cancelled) {
       if (enc.state !== 'closed') enc.close();
-      if (target.kind === 'stream') await target.stream.abort?.();
+      if (target.kind === 'stream') await target.stream.abort();
       return { blob: null, completed: false };
     }
 
@@ -132,7 +172,7 @@ export async function exportVideo(
     }
     if (target.kind === 'stream') {
       try {
-        await target.stream.abort?.();
+        await target.stream.abort();
       } catch {
         /* stream already closed */
       }
