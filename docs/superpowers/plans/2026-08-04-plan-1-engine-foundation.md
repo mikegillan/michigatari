@@ -34,7 +34,6 @@
 - [ ] **Step 1: Scaffold Vite into the existing repo**
 
 ```bash
-cd /Users/mgillan/map-generator
 npm create vite@latest scaffold -- --template react-ts
 cp -R scaffold/. .
 rm -rf scaffold

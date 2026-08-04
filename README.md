@@ -35,4 +35,6 @@ Export uses WebCodecs: best in Chromium browsers (Chrome/Edge — direct save
 to disk). Firefox exports in memory and downloads at the end. Safari does
 not support video export yet.
 
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) (note the CLA).
+
 License: AGPL-3.0
