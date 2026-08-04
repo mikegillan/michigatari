@@ -89,3 +89,11 @@ it('hides elements whose enter keyframe no longer exists', () => {
   const dangling = marker({ keyframeId: 'gone', animation: 'fade', delayMs: 0, durationMs: 100, easing: 'linear' });
   expect(evaluateElement(dangling, tl, 1000).visible).toBe(false);
 });
+
+it('is fully shown between the enter and exit windows', () => {
+  const exiting = marker(
+    { keyframeId: 'kf1', animation: 'fade', delayMs: 0, durationMs: 100, easing: 'linear' },
+    { keyframeId: 'kf2', animation: 'fade', delayMs: 0, durationMs: 300, easing: 'linear' },
+  );
+  expect(evaluateElement(exiting, tl, 2000)).toEqual({ visible: true, opacity: 1, scale: 1, progress: 1 });
+});
