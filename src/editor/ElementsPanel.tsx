@@ -32,13 +32,24 @@ export function ElementsPanel() {
   };
 
   const finishRoad = async () => {
-    const p = useEditorStore.getState().placing;
+    const before = useEditorStore.getState().placing;
     const firstKf = useEditorStore.getState().project.keyframes[0]?.id;
-    if (!p || p.kind !== 'route' || p.mode !== 'road' || !firstKf) return;
+    if (!before || before.kind !== 'route' || before.mode !== 'road' || !firstKf) return;
     setFetching(true);
     try {
-      const geometry = await roadRoute(p.waypoints);
-      useEditorStore.getState().addElement(createRoadRoute(p.waypoints, geometry, firstKf));
+      const geometry = await roadRoute(before.waypoints);
+      const now = useEditorStore.getState().placing;
+      if (now === null) return; // user cancelled mid-fetch: honor it, drop the result
+      if (now !== before) {
+        // waypoints changed mid-fetch: don't commit a partial route
+        notifications.show({
+          color: 'yellow',
+          title: 'Waypoints changed',
+          message: 'The route was updated while routing — press Finish again to include the new points.',
+        });
+        return;
+      }
+      useEditorStore.getState().addElement(createRoadRoute(before.waypoints, geometry, firstKf));
       useEditorStore.getState().setPlacing(null);
     } catch (err) {
       notifications.show({ color: 'red', title: 'Routing failed', message: String((err as Error).message) });
