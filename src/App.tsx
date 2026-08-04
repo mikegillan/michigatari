@@ -20,7 +20,9 @@ export default function App() {
     });
 
     let raf = 0;
+    let cancelled = false;
     map.on('load', () => {
+      if (cancelled) return;
       ensureElementLayers(map, sampleProject);
       const timeline = computeTimeline(sampleProject);
       const start = performance.now();
@@ -33,6 +35,7 @@ export default function App() {
     });
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       map.remove();
     };
