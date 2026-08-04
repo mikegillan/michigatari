@@ -1,5 +1,6 @@
 import { Button, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { useEditorStore, type PlacingState } from './store';
+import { ElementRow } from './ElementRow';
 
 type ArmSpec = { label: string; make: () => NonNullable<PlacingState> };
 
@@ -15,6 +16,7 @@ export function ElementsPanel() {
   const mode = useEditorStore((s) => s.mode);
   const placing = useEditorStore((s) => s.placing);
   const setPlacing = useEditorStore((s) => s.setPlacing);
+  const elements = useEditorStore((s) => s.project.elements);
   const disabled = !hasKeyframes || mode === 'preview';
 
   const isArmed = (spec: ArmSpec): boolean => {
@@ -25,7 +27,7 @@ export function ElementsPanel() {
   };
 
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" style={{ overflowY: 'auto' }}>
       <Tooltip label="Capture a keyframe first — element animations bind to keyframes" disabled={hasKeyframes}>
         <Group gap={6}>
           {ADD_BUTTONS.map((b) => (
@@ -53,6 +55,8 @@ export function ElementsPanel() {
           <Button size="compact-xs" variant="subtle" onClick={() => setPlacing(null)}>Cancel</Button>
         </Group>
       )}
+      {elements.map((el) => <ElementRow key={el.id} element={el} />)}
+      {elements.length === 0 && <Text size="xs" c="dimmed">No elements yet.</Text>}
     </Stack>
   );
 }
