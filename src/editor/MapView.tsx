@@ -13,13 +13,14 @@ export function MapView() {
   const aspect = useEditorStore((s) => s.project.settings.aspect);
   const styleUrl = useEditorStore((s) => s.project.settings.styleUrl);
   const mode = useEditorStore((s) => s.mode);
+  const initialStyleRef = useRef(useEditorStore.getState().project.settings.styleUrl);
 
   // Create the map once.
   useEffect(() => {
     let cancelled = false;
     const map = new maplibregl.Map({
       container: containerRef.current!,
-      style: useEditorStore.getState().project.settings.styleUrl,
+      style: initialStyleRef.current,
       center: [137.0, 36.5],
       zoom: 3.5,
       attributionControl: { compact: true },
@@ -28,8 +29,17 @@ export function MapView() {
       if (cancelled) return;
       mapRef.current = map;
       const { project } = useEditorStore.getState();
-      syncElementLayers(map, project);
-      applyElements(map, project, allShownStates(project.elements));
+      const resync = () => {
+        const { project: p } = useEditorStore.getState();
+        syncElementLayers(map, p);
+        applyElements(map, p, allShownStates(p.elements));
+      };
+      if (project.settings.styleUrl !== initialStyleRef.current) {
+        map.setStyle(project.settings.styleUrl);
+        map.once('style.load', resync);
+      } else {
+        resync();
+      }
     });
     return () => {
       cancelled = true;
@@ -58,11 +68,15 @@ export function MapView() {
     const map = mapRef.current;
     if (!map) return;
     map.setStyle(styleUrl);
-    map.once('style.load', () => {
+    const handler = () => {
       const { project } = useEditorStore.getState();
       syncElementLayers(map, project);
       applyElements(map, project, allShownStates(project.elements));
-    });
+    };
+    map.once('style.load', handler);
+    return () => {
+      map.off('style.load', handler);
+    };
   }, [styleUrl]);
 
   // Aspect changes resize the letterbox.
