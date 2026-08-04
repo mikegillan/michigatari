@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { notifications } from '@mantine/notifications';
 import './MapView.css';
 import { useEditorStore } from './store';
 import { mapRef } from './mapRef';
@@ -25,6 +26,16 @@ export function MapView() {
       center: [137.0, 36.5],
       zoom: 3.5,
       attributionControl: { compact: true },
+    });
+    let errorShown = false;
+    map.on('error', (e) => {
+      if (errorShown || cancelled) return;
+      errorShown = true;
+      notifications.show({
+        color: 'red',
+        title: 'Map failed to load',
+        message: String((e as { error?: Error }).error?.message ?? 'Check the style URL and your network connection.'),
+      });
     });
     map.on('load', () => {
       if (cancelled) return;

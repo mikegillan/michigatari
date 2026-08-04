@@ -3,12 +3,12 @@ import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEditorStore } from './store';
-import { currentZoomOffset, mapRef } from './mapRef';
+import { cameraFromMap, currentZoomOffset, mapRef } from './mapRef';
 import { captureThumbnail } from './captureThumbnail';
-import { cameraFromMap } from './CaptureBar';
+import { EASINGS } from '../engine/easing';
 import type { EasingName, Keyframe } from '../engine/types';
 
-const EASING_OPTIONS: EasingName[] = ['linear', 'easeIn', 'easeOut', 'easeInOut'];
+const EASING_OPTIONS = Object.keys(EASINGS) as EasingName[];
 
 function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLast: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: kf.id });
@@ -45,10 +45,16 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
             </Text>
             <Group gap={4}>
               <Tooltip label="Update from current view">
-                <ActionIcon size="sm" variant="subtle" onClick={updateFromView}>↺</ActionIcon>
+                <ActionIcon
+                  size="sm" variant="subtle" onClick={updateFromView}
+                  aria-label="Update from current view"
+                >↺</ActionIcon>
               </Tooltip>
               <Tooltip label="Delete keyframe">
-                <ActionIcon size="sm" variant="subtle" color="red" onClick={() => deleteKeyframe(kf.id)}>✕</ActionIcon>
+                <ActionIcon
+                  size="sm" variant="subtle" color="red" onClick={() => deleteKeyframe(kf.id)}
+                  aria-label="Delete keyframe"
+                >✕</ActionIcon>
               </Tooltip>
             </Group>
           </Group>
