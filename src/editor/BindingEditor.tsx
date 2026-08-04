@@ -82,6 +82,8 @@ export function BindingEditor({ element }: { element: Element }) {
             onChange={(v) => patchExit({ delayMs: Number(v) || 0 })} />
           <NumberInput size="xs" label="Duration (ms)" min={0} step={100} value={element.exit.durationMs}
             onChange={(v) => patchExit({ durationMs: Number(v) || 0 })} />
+          <Select size="xs" label="Easing" data={EASING_OPTIONS} allowDeselect={false}
+            value={element.exit.easing} onChange={(v) => v && patchExit({ easing: v as EasingName })} />
         </Group>
       )}
     </Stack>
