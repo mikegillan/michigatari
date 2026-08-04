@@ -27,7 +27,11 @@ vertical. Everything runs in the browser.
 
     npm install
     npm run dev    # the editor
-    npm test       # engine unit tests
+    npm test       # unit tests
     npm run build  # production build
+
+Export uses WebCodecs: best in Chromium browsers (Chrome/Edge — direct save
+to disk). Firefox exports in memory and downloads at the end. Safari does
+not support video export yet.
 
 License: AGPL-3.0
