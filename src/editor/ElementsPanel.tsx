@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { Button, Group, Stack, Text, Tooltip } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useEditorStore, type PlacingState } from './store';
 import { ElementRow } from './ElementRow';
+import { roadRoute } from '../providers/osrm';
+import { createRoadRoute } from './elementDefaults';
 
 type ArmSpec = { label: string; make: () => NonNullable<PlacingState> };
 
@@ -12,6 +16,7 @@ const ADD_BUTTONS: ArmSpec[] = [
 ];
 
 export function ElementsPanel() {
+  const [fetching, setFetching] = useState(false);
   const hasKeyframes = useEditorStore((s) => s.project.keyframes.length > 0);
   const mode = useEditorStore((s) => s.mode);
   const placing = useEditorStore((s) => s.placing);
@@ -24,6 +29,23 @@ export function ElementsPanel() {
     const target = spec.make();
     if (placing.kind !== target.kind) return false;
     return placing.kind !== 'route' || target.kind !== 'route' || placing.mode === target.mode;
+  };
+
+  const finishRoad = async () => {
+    const p = useEditorStore.getState().placing;
+    const firstKf = useEditorStore.getState().project.keyframes[0]?.id;
+    if (!p || p.kind !== 'route' || p.mode !== 'road' || !firstKf) return;
+    setFetching(true);
+    try {
+      const geometry = await roadRoute(p.waypoints);
+      useEditorStore.getState().addElement(createRoadRoute(p.waypoints, geometry, firstKf));
+      useEditorStore.getState().setPlacing(null);
+    } catch (err) {
+      notifications.show({ color: 'red', title: 'Routing failed', message: String((err as Error).message) });
+      // keep placing state so the user can retry or cancel
+    } finally {
+      setFetching(false);
+    }
   };
 
   return (
@@ -52,6 +74,16 @@ export function ElementsPanel() {
                 ? `Click waypoints on the map (${placing.waypoints.length} so far).`
                 : 'Click the map to place it.'}
           </Text>
+          {placing.kind === 'route' && placing.mode === 'road' && (
+            <Button
+              size="compact-xs"
+              loading={fetching}
+              disabled={placing.waypoints.length < 2}
+              onClick={finishRoad}
+            >
+              Finish ({placing.waypoints.length})
+            </Button>
+          )}
           <Button size="compact-xs" variant="subtle" onClick={() => setPlacing(null)}>Cancel</Button>
         </Group>
       )}

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { ActionIcon, Card, ColorInput, Group, NumberInput, Stack, Text, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useEditorStore } from './store';
 import { BindingEditor } from './BindingEditor';
+import { roadRoute } from '../providers/osrm';
 import type { Element } from '../engine/types';
 
 function rowTitle(el: Element): string {
@@ -13,18 +16,40 @@ function rowTitle(el: Element): string {
 }
 
 export function ElementRow({ element }: { element: Element }) {
+  const [refreshing, setRefreshing] = useState(false);
   const updateElement = useEditorStore((s) => s.updateElement);
   const deleteElement = useEditorStore((s) => s.deleteElement);
   const sizeKey = element.type === 'marker' || element.type === 'label' ? 'size' : 'width';
   const sizeDefault = element.type === 'marker' ? 8 : element.type === 'label' ? 16 : element.type === 'route' ? 3 : 2.5;
+
+  const refreshRoad = async () => {
+    if (element.type !== 'route') return;
+    setRefreshing(true);
+    try {
+      const geometry = await roadRoute(element.data.waypoints);
+      updateElement(element.id, (el) =>
+        el.type === 'route' ? { ...el, data: { ...el.data, geometry } } : el,
+      );
+    } catch (err) {
+      notifications.show({ color: 'red', title: 'Routing failed', message: String((err as Error).message) });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <Card withBorder padding="xs">
       <Stack gap={6}>
         <Group justify="space-between" gap="xs">
           <Text size="sm" fw={600} lineClamp={1}>{rowTitle(element)}</Text>
-          <ActionIcon size="sm" variant="subtle" color="red" aria-label="Delete element"
-            onClick={() => deleteElement(element.id)}>✕</ActionIcon>
+          <Group gap={6}>
+            {element.type === 'route' && element.data.mode === 'road' && (
+              <ActionIcon size="sm" variant="subtle" aria-label="Refresh road geometry" loading={refreshing}
+                onClick={refreshRoad}>↻</ActionIcon>
+            )}
+            <ActionIcon size="sm" variant="subtle" color="red" aria-label="Delete element"
+              onClick={() => deleteElement(element.id)}>✕</ActionIcon>
+          </Group>
         </Group>
         {element.type === 'label' && (
           <TextInput
