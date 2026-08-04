@@ -18,7 +18,9 @@ export function sliceByProgress(line: LineString, progress: number): LineString 
   if (progress <= 0) return null;
   if (progress >= 1) return line;
   const feature: Feature<LineString> = { type: 'Feature', properties: {}, geometry: line };
-  return lineSliceAlong(feature, 0, length(feature) * progress).geometry;
+  const total = length(feature);
+  if (total === 0) return null;
+  return lineSliceAlong(feature, 0, total * progress).geometry;
 }
 
 // Largest outer ring, reordered to start at its northernmost vertex, wound

@@ -11,6 +11,11 @@ and export the result as video. Runs entirely in the browser.
 Built with [MapLibre GL JS](https://maplibre.org/) and
 [OpenFreeMap](https://openfreemap.org/) tiles. Developed with Claude.
 
+Region search uses [Nominatim](https://nominatim.org/) and road routing uses
+the public [OSRM](https://project-osrm.org/) demo server — community-run OSM
+services suitable for light personal use only. If you host Michigatari for
+others, swap in your own providers (the base URLs live in `src/providers/`).
+
 ## Status
 
 The editor is feature-complete for authoring: keyframe camera animation plus

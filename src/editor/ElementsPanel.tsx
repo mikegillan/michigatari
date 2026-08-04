@@ -6,6 +6,7 @@ import { ElementRow } from './ElementRow';
 import { RegionSearch } from './RegionSearch';
 import { roadRoute } from '../providers/osrm';
 import { createRoadRoute } from './elementDefaults';
+import { errorMessage } from './errors';
 
 type ArmSpec = { label: string; make: () => NonNullable<PlacingState> };
 
@@ -42,18 +43,22 @@ export function ElementsPanel() {
       const now = useEditorStore.getState().placing;
       if (now === null) return; // user cancelled mid-fetch: honor it, drop the result
       if (now !== before) {
-        // waypoints changed mid-fetch: don't commit a partial route
-        notifications.show({
-          color: 'yellow',
-          title: 'Waypoints changed',
-          message: 'The route was updated while routing — press Finish again to include the new points.',
-        });
+        // waypoints changed mid-fetch: don't commit a partial route. Only warn
+        // if the user is still mid-road-route placement — if they switched
+        // tools, dropping the result silently is correct.
+        if (now?.kind === 'route' && now.mode === 'road') {
+          notifications.show({
+            color: 'yellow',
+            title: 'Waypoints changed',
+            message: 'The route was updated while routing — press Finish again to include the new points.',
+          });
+        }
         return;
       }
       useEditorStore.getState().addElement(createRoadRoute(before.waypoints, geometry, firstKf));
       useEditorStore.getState().setPlacing(null);
     } catch (err) {
-      notifications.show({ color: 'red', title: 'Routing failed', message: String((err as Error).message) });
+      notifications.show({ color: 'red', title: 'Routing failed', message: errorMessage(err) });
       // keep placing state so the user can retry or cancel
     } finally {
       setFetching(false);
@@ -61,7 +66,7 @@ export function ElementsPanel() {
   };
 
   return (
-    <Stack gap="sm" style={{ overflowY: 'auto' }}>
+    <Stack gap="sm">
       <Tooltip label="Capture a keyframe first — element animations bind to keyframes" disabled={hasKeyframes}>
         <Group gap={6}>
           {ADD_BUTTONS.map((b) => (

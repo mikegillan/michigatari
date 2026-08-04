@@ -10,7 +10,7 @@ function ok(body: unknown) {
 it('queries nominatim with polygon output and maps candidates', async () => {
   const fetchMock = vi.fn(async () =>
     ok([
-      { display_name: 'Hokkaido, Japan', osm_id: 3795658, geojson: { type: 'MultiPolygon' as const, coordinates: [] as Array<number[][][]> } },
+      { display_name: 'Hokkaido, Japan', osm_id: 3795658, osm_type: 'relation', geojson: { type: 'MultiPolygon' as const, coordinates: [] as Array<number[][][]> } },
       { display_name: 'Hokkaido Station', osm_id: 1, geojson: { type: 'Point', coordinates: [0, 0] } },
       { display_name: 'No geometry', osm_id: 2 },
     ]),
@@ -20,10 +20,11 @@ it('queries nominatim with polygon output and maps candidates', async () => {
   const url = String((fetchMock.mock.calls as unknown as Array<[string | Request]>)[0][0]);
   expect(url.startsWith(`${NOMINATIM_BASE_URL}/search?`)).toBe(true);
   expect(url).toContain('polygon_geojson=1');
+  expect(url).toContain('polygon_threshold=0.005');
   expect(url).toContain('q=Hokkaido');
   // point results and missing geometry are filtered out
   expect(results).toEqual([
-    { displayName: 'Hokkaido, Japan', osmId: 3795658, geometry: { type: 'MultiPolygon', coordinates: [] as Array<number[][][]> } },
+    { displayName: 'Hokkaido, Japan', osmId: 3795658, osmType: 'relation', geometry: { type: 'MultiPolygon', coordinates: [] as Array<number[][][]> } },
   ]);
 });
 

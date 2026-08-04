@@ -29,3 +29,8 @@ it('throws when OSRM finds no route', async () => {
   ));
   await expect(roadRoute([[0, 0], [1, 1]])).rejects.toThrow(/no road route/i);
 });
+
+it('throws a readable error on HTTP failure', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 502 }) as Response));
+  await expect(roadRoute([[0, 0], [1, 1]])).rejects.toThrow(/502/);
+});

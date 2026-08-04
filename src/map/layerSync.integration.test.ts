@@ -1,8 +1,10 @@
 import { expect, it } from 'vitest';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { syncElementLayers } from './layerSync';
-import { createElementLayers, applyElements } from './applyScene';
+import { applyScene, createElementLayers, applyElements } from './applyScene';
 import { createFakeMap } from './fakeMap';
+import { sceneAt } from '../engine/scene';
+import { computeTimeline } from '../engine/timeline';
 import type {
   Element, LabelElement, MarkerElement, Project, RegionElement, RouteElement,
 } from '../engine/types';
@@ -58,6 +60,19 @@ it('creates a region\'s line layer plus its fill source/layer, and removal remov
   const idx = (op: string, id: string) => fake.calls.findIndex(([o, i]) => o === op && i === id);
   expect(idx('removeLayer', 'el-rg1')).toBeLessThan(idx('removeSource', 'el-rg1'));
   expect(idx('removeLayer', 'el-rg1-fill')).toBeLessThan(idx('removeSource', 'el-rg1-fill'));
+});
+
+it('region create seeds el-<id> and el-<id>-fill layers/sources, with the fill source carrying the element geometry', () => {
+  const fake = createFakeMap();
+  const el = region();
+  syncElementLayers(asMap(fake), project([el]));
+  expect(fake.layers.map((l) => l.id).sort()).toEqual(['el-rg1', 'el-rg1-fill']);
+  expect(fake.sources.has('el-rg1')).toBe(true);
+  expect(fake.sources.has('el-rg1-fill')).toBe(true);
+  expect(fake.sources.get('el-rg1-fill')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: {}, geometry: el.data.geometry }],
+  });
 });
 
 it('restyles a surviving marker\'s circle-color', () => {
@@ -132,4 +147,33 @@ it('sets EMPTY data on an invisible element\'s source via a LATER setData call, 
   const setDataCalls = fake.calls.filter(([op, id]) => op === 'setData' && id === 'el-mk1');
   expect(setDataCalls).toHaveLength(2); // one per applyElements call, excluding the creation-time addSource
   expect(fake.sources.get('el-mk1')?.data).toEqual({ type: 'FeatureCollection', features: [] });
+});
+
+it('applyScene drives the map camera to the keyframe pose and re-evaluates element paint from the timeline', () => {
+  const fake = createFakeMap();
+  const el = marker({ size: 10 });
+  const proj: Project = {
+    version: 1,
+    settings: { resolution: '1080p', fps: 30, aspect: '16:9', styleUrl: '' },
+    keyframes: [
+      {
+        id: 'kf1',
+        camera: { center: [139.77, 35.68], zoom: 8, bearing: 0, pitch: 0 },
+        holdMs: 1000,
+        transition: { durationMs: 0, easing: 'linear' },
+      },
+    ],
+    elements: [el, region()],
+  };
+  syncElementLayers(asMap(fake), proj);
+  const timeline = computeTimeline(proj);
+
+  applyScene(asMap(fake), proj, sceneAt(proj, 0, timeline));
+  expect(fake.jumpToCalls.at(-1)).toEqual(proj.keyframes[0].camera);
+
+  // 200ms into the marker's 400ms pop (ENTER): mid-flight, not resting at rest scale.
+  applyScene(asMap(fake), proj, sceneAt(proj, 200, timeline));
+  const radius = fake.layers.find((l) => l.id === 'el-mk1')?.paint?.['circle-radius'] as number;
+  expect(radius).not.toBe(10); // default size — pop overshoot means it isn't resting there
+  expect(radius).toBeGreaterThanOrEqual(0);
 });

@@ -5,6 +5,7 @@ import { useEditorStore } from './store';
 import { BindingEditor } from './BindingEditor';
 import { roadRoute } from '../providers/osrm';
 import { searchRegions } from '../providers/nominatim';
+import { errorMessage } from './errors';
 import type { Element } from '../engine/types';
 
 function rowTitle(el: Element): string {
@@ -18,6 +19,7 @@ function rowTitle(el: Element): string {
 
 export function ElementRow({ element }: { element: Element }) {
   const [refreshing, setRefreshing] = useState(false);
+  const mode = useEditorStore((s) => s.mode);
   const updateElement = useEditorStore((s) => s.updateElement);
   const deleteElement = useEditorStore((s) => s.deleteElement);
   const sizeKey = element.type === 'marker' || element.type === 'label' ? 'size' : 'width';
@@ -32,7 +34,7 @@ export function ElementRow({ element }: { element: Element }) {
         el.type === 'route' ? { ...el, data: { ...el.data, geometry } } : el,
       );
     } catch (err) {
-      notifications.show({ color: 'red', title: 'Routing failed', message: String((err as Error).message) });
+      notifications.show({ color: 'red', title: 'Routing failed', message: errorMessage(err) });
     } finally {
       setRefreshing(false);
     }
@@ -43,15 +45,20 @@ export function ElementRow({ element }: { element: Element }) {
     setRefreshing(true);
     try {
       const candidates = await searchRegions(element.data.query);
-      const match = candidates.find((c) => c.osmId === element.data.osmId) ?? candidates[0];
+      const match =
+        candidates.find(
+          (c) =>
+            c.osmId === element.data.osmId &&
+            (element.data.osmType === undefined || c.osmType === element.data.osmType),
+        ) ?? candidates[0];
       if (!match) throw new Error('No boundary found for this region anymore.');
       updateElement(element.id, (el) =>
         el.type === 'region'
-          ? { ...el, data: { ...el.data, osmId: match.osmId, geometry: match.geometry } }
+          ? { ...el, data: { ...el.data, osmId: match.osmId, osmType: match.osmType, geometry: match.geometry } }
           : el,
       );
     } catch (err) {
-      notifications.show({ color: 'red', title: 'Region refresh failed', message: String((err as Error).message) });
+      notifications.show({ color: 'red', title: 'Region refresh failed', message: errorMessage(err) });
     } finally {
       setRefreshing(false);
     }
@@ -65,11 +72,11 @@ export function ElementRow({ element }: { element: Element }) {
           <Group gap={6}>
             {element.type === 'route' && element.data.mode === 'road' && (
               <ActionIcon size="sm" variant="subtle" aria-label="Refresh road geometry" loading={refreshing}
-                onClick={refreshRoad}>↻</ActionIcon>
+                disabled={mode === 'preview'} onClick={refreshRoad}>↻</ActionIcon>
             )}
             {element.type === 'region' && (
               <ActionIcon size="sm" variant="subtle" aria-label="Refresh region boundary" loading={refreshing}
-                onClick={refreshRegion}>↻</ActionIcon>
+                disabled={mode === 'preview'} onClick={refreshRegion}>↻</ActionIcon>
             )}
             <ActionIcon size="sm" variant="subtle" color="red" aria-label="Delete element"
               onClick={() => deleteElement(element.id)}>✕</ActionIcon>

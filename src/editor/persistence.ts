@@ -1,3 +1,4 @@
+import { notifications } from '@mantine/notifications';
 import type { Project } from '../engine/types';
 import { parseProject, serializeProject } from '../engine/project';
 import { useEditorStore } from './store';
@@ -5,7 +6,19 @@ import { useEditorStore } from './store';
 export const AUTOSAVE_KEY = 'michigatari-autosave';
 
 export function writeAutosave(project: Project): void {
-  localStorage.setItem(AUTOSAVE_KEY, serializeProject(project));
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, serializeProject(project));
+  } catch {
+    try {
+      notifications.show({
+        color: 'red',
+        title: 'Autosave failed',
+        message: 'The project is too large for browser storage. Use Save to keep a copy on disk.',
+      });
+    } catch {
+      /* headless */
+    }
+  }
 }
 
 export function readAutosave(): Project | null {
