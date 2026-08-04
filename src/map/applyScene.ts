@@ -59,12 +59,6 @@ export function createElementLayers(map: MapLibreMap, el: Element): void {
   }
 }
 
-export function ensureElementLayers(map: MapLibreMap, project: Project): void {
-  for (const el of project.elements) {
-    if (!map.getSource(`el-${el.id}`)) createElementLayers(map, el);
-  }
-}
-
 export function applyElements(
   map: MapLibreMap,
   project: Project,
