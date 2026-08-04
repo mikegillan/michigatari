@@ -1,5 +1,6 @@
 import { ActionIcon, Card, ColorInput, Group, NumberInput, Stack, Text, TextInput } from '@mantine/core';
 import { useEditorStore } from './store';
+import { BindingEditor } from './BindingEditor';
 import type { Element } from '../engine/types';
 
 function rowTitle(el: Element): string {
@@ -49,6 +50,7 @@ export function ElementRow({ element }: { element: Element }) {
             }
           />
         </Group>
+        <BindingEditor element={element} />
       </Stack>
     </Card>
   );
