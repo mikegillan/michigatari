@@ -7,9 +7,25 @@ import { useEditorStore } from './store';
 import { mapRef } from './mapRef';
 import { syncElementLayers } from '../map/layerSync';
 import { applyElements } from '../map/applyScene';
+import { applyMapDetail } from '../map/mapDetail';
 import { allShownStates } from './editorScene';
+import { applyPreviewFrame } from './usePlayback';
 import { CaptureBar } from './CaptureBar';
 import { createArcRoute, createLabel, createMarker } from './elementDefaults';
+
+// Rebuild style-dependent state after a style (re)load: detail visibility,
+// element layers, and the current display — all-shown in edit mode, the
+// current preview frame in preview mode (a swap mid-preview must not stomp it).
+function resyncStyleState(map: maplibregl.Map): void {
+  const { project, mode, timeMs } = useEditorStore.getState();
+  applyMapDetail(map, project.settings.mapDetail);
+  syncElementLayers(map, project);
+  if (mode === 'edit') {
+    applyElements(map, project, allShownStates(project.elements));
+  } else {
+    applyPreviewFrame(timeMs);
+  }
+}
 
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +44,7 @@ export function MapView() {
       zoom: 3.5,
       attributionControl: { compact: true },
     });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     let errorShown = false;
     map.on('error', (e) => {
       if (errorShown || cancelled) return;
@@ -65,16 +82,11 @@ export function MapView() {
       if (cancelled) return;
       mapRef.current = map;
       const { project } = useEditorStore.getState();
-      const resync = () => {
-        const { project: p } = useEditorStore.getState();
-        syncElementLayers(map, p);
-        applyElements(map, p, allShownStates(p.elements));
-      };
       if (project.settings.styleUrl !== initialStyleRef.current) {
         map.setStyle(project.settings.styleUrl);
-        map.once('style.load', resync);
+        map.once('style.load', () => resyncStyleState(map));
       } else {
-        resync();
+        resyncStyleState(map);
       }
     });
     return () => {
@@ -91,6 +103,9 @@ export function MapView() {
         const map = mapRef.current;
         if (!map || state.project === prev.project) return;
         if (!map.isStyleLoaded()) return; // initial sync happens in the load handler
+        if (state.project.settings.mapDetail !== prev.project.settings.mapDetail) {
+          applyMapDetail(map, state.project.settings.mapDetail);
+        }
         syncElementLayers(map, state.project);
         if (state.mode === 'edit') {
           applyElements(map, state.project, allShownStates(state.project.elements));
@@ -99,16 +114,12 @@ export function MapView() {
     [],
   );
 
-  // Style URL changes rebuild element layers after the new style loads.
+  // Style URL changes rebuild detail visibility and element layers after the new style loads.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     map.setStyle(styleUrl);
-    const handler = () => {
-      const { project } = useEditorStore.getState();
-      syncElementLayers(map, project);
-      applyElements(map, project, allShownStates(project.elements));
-    };
+    const handler = () => resyncStyleState(map);
     map.once('style.load', handler);
     return () => {
       map.off('style.load', handler);

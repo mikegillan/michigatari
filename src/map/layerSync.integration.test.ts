@@ -125,7 +125,7 @@ it('applyElements skips an element with no source on the map, without throwing',
 it('sets marker radius to size * max(0, scale)', () => {
   const fake = createFakeMap();
   const el = marker({ size: 10 });
-  createElementLayers(asMap(fake), el);
+  createElementLayers(asMap(fake), el, ['Noto Sans Regular']);
   const states: Record<string, ElementScene> = { mk1: { visible: true, opacity: 1, scale: 1.1, progress: 1 } };
   applyElements(asMap(fake), project([el]), states);
   expect(fake.layers.find((l) => l.id === 'el-mk1')?.paint?.['circle-radius']).toBeCloseTo(11);
@@ -134,7 +134,7 @@ it('sets marker radius to size * max(0, scale)', () => {
 it('sets EMPTY data on an invisible element\'s source via a LATER setData call, not just creation-time state', () => {
   const fake = createFakeMap();
   const el = marker();
-  createElementLayers(asMap(fake), el); // addSource seeds data EMPTY -> must not be mistaken for the real assertion
+  createElementLayers(asMap(fake), el, ['Noto Sans Regular']); // addSource seeds data EMPTY -> must not be mistaken for the real assertion
   const visible: Record<string, ElementScene> = { mk1: { visible: true, opacity: 1, scale: 1, progress: 1 } };
   applyElements(asMap(fake), project([el]), visible);
   expect(fake.sources.get('el-mk1')?.data).toEqual({

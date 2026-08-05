@@ -1,6 +1,6 @@
 import * as Mp4Muxer from 'mp4-muxer';
 import * as WebmMuxer from 'webm-muxer';
-import { appConfig } from '../config';
+import { appConfig, styleOptionFor } from '../config';
 import type { Project } from '../engine/types';
 import { buildEncoderConfig, exportDimensions, type ExportFormat } from './encoderConfig';
 import { frameTimestampUs } from './timing';
@@ -92,6 +92,7 @@ export async function exportVideo(
     composite.height = height;
     const ctx = composite.getContext('2d')!;
     const fontPx = Math.max(11, Math.round(height * 0.015));
+    const label = styleOptionFor(project.settings.styleUrl)?.attribution ?? appConfig.exportAttribution;
 
     exportMap = createExportMap(project);
     await renderFrames(exportMap.map, project, {
@@ -124,7 +125,6 @@ export async function exportVideo(
         }
 
         ctx.drawImage(canvas, 0, 0);
-        const label = appConfig.exportAttribution;
         ctx.font = `${fontPx}px sans-serif`;
         const pad = Math.round(fontPx * 0.5);
         const w = ctx.measureText(label).width + pad * 2;

@@ -2,6 +2,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { GeoJSONSource } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
 import type { Project } from '../engine/types';
+import { elementFontStack } from '../config';
 import { createElementLayers } from './applyScene';
 
 export function planLayerSync(
@@ -34,8 +35,9 @@ export function syncElementLayers(map: MapLibreMap, project: Project): void {
       if (map.getSource(layerId)) map.removeSource(layerId);
     }
   }
+  const fontStack = elementFontStack(project.settings.styleUrl);
   for (const id of plan.create) {
-    createElementLayers(map, byId.get(id)!);
+    createElementLayers(map, byId.get(id)!, fontStack);
   }
   for (const id of plan.restyle) {
     const el = byId.get(id)!;

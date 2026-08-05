@@ -29,6 +29,14 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
     setThumbnail(kf.id, await captureThumbnail(map));
   };
 
+  // Numeric camera edits also move the map there so the change is visible.
+  // Stored zoom is reference-viewport zoom; jumpTo converts (same as jumpTo above).
+  const updateCamera = (patch: Partial<Keyframe['camera']>) => {
+    const camera = { ...kf.camera, ...patch };
+    updateKeyframe(kf.id, { camera });
+    mapRef.current?.jumpTo({ ...camera, zoom: camera.zoom - currentZoomOffset() });
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -59,6 +67,20 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
             </Group>
           </Group>
           {thumbnail && <Image src={thumbnail} radius="sm" onClick={jumpTo} style={{ cursor: 'pointer' }} />}
+          <Group gap="xs" grow>
+            <NumberInput
+              label="Zoom" size="xs" min={0} max={22} step={0.5} decimalScale={2} value={kf.camera.zoom}
+              onChange={(v) => updateCamera({ zoom: Number(v) || 0 })}
+            />
+            <NumberInput
+              label="Bearing" size="xs" min={-180} max={180} step={5} decimalScale={1} value={kf.camera.bearing}
+              onChange={(v) => updateCamera({ bearing: Number(v) || 0 })}
+            />
+            <NumberInput
+              label="Pitch" size="xs" min={0} max={60} step={5} decimalScale={1} value={kf.camera.pitch}
+              onChange={(v) => updateCamera({ pitch: Number(v) || 0 })}
+            />
+          </Group>
           <NumberInput
             label="Hold (ms)" size="xs" min={0} step={100} value={kf.holdMs}
             onChange={(v) => updateKeyframe(kf.id, { holdMs: Number(v) || 0 })}

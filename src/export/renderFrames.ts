@@ -5,6 +5,7 @@ import { REFERENCE_VIEWPORT } from '../engine/viewport';
 import { computeTimeline } from '../engine/timeline';
 import { sceneAt } from '../engine/scene';
 import { applyScene } from '../map/applyScene';
+import { applyMapDetail } from '../map/mapDetail';
 import { syncElementLayers } from '../map/layerSync';
 import { exportDimensions, exportPixelRatio } from './encoderConfig';
 import { frameCount, frameTimeMs } from './timing';
@@ -102,6 +103,7 @@ export async function renderFrames(
       );
     }
 
+    applyMapDetail(map, project.settings.mapDetail);
     syncElementLayers(map, project);
 
     // Kill paint transitions the applier animates: exported frames are

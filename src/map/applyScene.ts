@@ -13,7 +13,7 @@ function collection(geometry: Geometry | null, properties: Record<string, unknow
     : EMPTY;
 }
 
-export function createElementLayers(map: MapLibreMap, el: Element): void {
+export function createElementLayers(map: MapLibreMap, el: Element, fontStack: string[]): void {
   const id = `el-${el.id}`;
   map.addSource(id, { type: 'geojson', data: EMPTY });
   const color = String(el.style.color ?? '#d63031');
@@ -33,8 +33,8 @@ export function createElementLayers(map: MapLibreMap, el: Element): void {
         layout: {
           'text-field': ['get', 'text'],
           'text-size': Number(el.style.size ?? 16),
-          // hosted by OpenFreeMap (the default styleUrl); the MapLibre default stack 404s there
-          'text-font': ['Noto Sans Regular'],
+          // must exist on the active style's glyph host; the MapLibre default stack 404s on OpenFreeMap
+          'text-font': fontStack,
         },
         paint: { 'text-color': color, 'text-opacity': 0, 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
       });

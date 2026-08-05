@@ -26,11 +26,22 @@ export interface Keyframe {
 export type Resolution = '1080p' | '1440p' | '4k';
 export type Aspect = '16:9' | '9:16';
 
+export type PlaceLabelDetail = 'all' | 'major' | 'none';
+
+// All fields optional; absent means "show everything" (pre-existing projects).
+export interface MapDetail {
+  placeLabels?: PlaceLabelDetail;
+  poiLabels?: boolean;
+  roads?: boolean;
+  boundaries?: boolean;
+}
+
 export interface Settings {
   resolution: Resolution;
   fps: 30 | 60;
   aspect: Aspect;
   styleUrl: string;
+  mapDetail?: MapDetail;
 }
 
 export type EnterAnimation = 'pop' | 'fade' | 'draw';
