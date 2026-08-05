@@ -62,11 +62,14 @@ export async function exportVideo(
   options: {
     format: ExportFormat;
     target: ExportTarget;
+    /** Burn the credit line into frames (default true). Callers passing false
+     * are responsible for attribution elsewhere (e.g. video description). */
+    attribution?: boolean;
     onProgress?(frameIndex: number, total: number): void;
     shouldCancel?(): boolean;
   },
 ): Promise<ExportResult> {
-  const { format, target, onProgress, shouldCancel } = options;
+  const { format, target, attribution = true, onProgress, shouldCancel } = options;
   const fps = project.settings.fps;
 
   let encoderError: Error | null = null;
@@ -124,16 +127,18 @@ export async function exportVideo(
           if (encoderError) throw encoderError;
         }
 
-        ctx.drawImage(canvas, 0, 0);
-        ctx.font = `${fontPx}px sans-serif`;
-        const pad = Math.round(fontPx * 0.5);
-        const w = ctx.measureText(label).width + pad * 2;
-        const h = fontPx + pad * 2;
-        ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.fillRect(width - w, height - h, w, h);
-        ctx.fillStyle = '#333';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, width - w + pad, height - h / 2);
+        ctx.drawImage(canvas, 0, 0); // always: the composite canvas is the frame source
+        if (attribution) {
+          ctx.font = `${fontPx}px sans-serif`;
+          const pad = Math.round(fontPx * 0.5);
+          const w = ctx.measureText(label).width + pad * 2;
+          const h = fontPx + pad * 2;
+          ctx.fillStyle = 'rgba(255,255,255,0.75)';
+          ctx.fillRect(width - w, height - h, w, h);
+          ctx.fillStyle = '#333';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, width - w + pad, height - h / 2);
+        }
 
         const frame = new VideoFrame(composite, {
           timestamp: frameTimestampUs(i, fps),

@@ -24,6 +24,13 @@ export interface AppConfig {
   roadRoute: typeof defaultRoadRoute;
   /** Fallback attribution when a project's styleUrl isn't in `styles`. */
   exportAttribution: string;
+  /**
+   * Offer a "no burned-in attribution" export toggle. Off in the public build:
+   * attribution must then travel in the video description instead (OSMF video
+   * attribution guidance), which the dialog handles by handing the user the
+   * credit line. Enabled by builds whose provider terms allow it.
+   */
+  allowCleanExport?: boolean;
 }
 
 export const appConfig: AppConfig = {

@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { Button, Group, Modal, Progress, SegmentedControl, Stack, Text, Tooltip } from '@mantine/core';
+import { Button, Group, Modal, Progress, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEditorStore } from './store';
+import { appConfig, styleOptionFor } from '../config';
 import { errorMessage } from './errors';
 import { computeTimeline } from '../engine/timeline';
 import { exportDimensions, type ExportFormat } from '../export/encoderConfig';
@@ -21,6 +22,7 @@ export function ExportDialog() {
   const [opened, setOpened] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [format, setFormat] = useState<ExportFormat>('mp4');
+  const [burnAttribution, setBurnAttribution] = useState(true);
   const cancelRef = useRef(false);
 
   const open = async () => {
@@ -68,6 +70,7 @@ export function ExportDialog() {
       const result = await exportVideo(project, {
         format,
         target,
+        attribution: appConfig.allowCleanExport ? burnAttribution : true,
         shouldCancel: () => cancelRef.current,
         onProgress: (frame, total) =>
           setPhase((p) => (p.kind === 'exporting' ? { ...p, frame, total } : p)),
@@ -84,7 +87,26 @@ export function ExportDialog() {
           a.remove();
           setTimeout(() => URL.revokeObjectURL(a.href), 0);
         }
-        notifications.show({ color: 'green', title: 'Export complete', message: `Saved michigatari.${ext}` });
+        if (appConfig.allowCleanExport && !burnAttribution) {
+          // Attribution still required by the data license — hand the user the
+          // credit line for their video description (OSMF video guidance).
+          const credit = styleOptionFor(project.settings.styleUrl)?.attribution ?? appConfig.exportAttribution;
+          let copied = false;
+          try {
+            await navigator.clipboard.writeText(credit);
+            copied = true;
+          } catch { /* clipboard may be unavailable; the notification still shows the line */ }
+          notifications.show({
+            color: 'green',
+            title: 'Export complete',
+            autoClose: false,
+            message: copied
+              ? `Saved michigatari.${ext}. Attribution copied to clipboard — paste "${credit}" into your video description.`
+              : `Saved michigatari.${ext}. Add "${credit}" to your video description (attribution is required).`,
+          });
+        } else {
+          notifications.show({ color: 'green', title: 'Export complete', message: `Saved michigatari.${ext}` });
+        }
       }
     } catch (err) {
       notifications.show({ color: 'red', title: 'Export failed', message: errorMessage(err) });
@@ -129,6 +151,15 @@ export function ExportDialog() {
                 value={format}
                 onChange={(v) => setFormat(v as ExportFormat)}
               />
+              {appConfig.allowCleanExport && (
+                <Switch
+                  size="xs"
+                  label="Burn attribution into the video"
+                  description="If off, the credit line goes in your video description instead"
+                  checked={burnAttribution}
+                  onChange={(e) => setBurnAttribution(e.currentTarget.checked)}
+                />
+              )}
               <Button onClick={() => void start()}>Start export</Button>
             </>
           )}
