@@ -37,4 +37,8 @@ not support video export yet.
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) (note the CLA).
 
+If Michigatari is useful to you, you can say thanks via
+[GitHub Sponsors](https://github.com/sponsors/mikegillan) or
+[Ko-fi](https://ko-fi.com/mikegillan).
+
 License: AGPL-3.0
