@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="public/icon.png" alt="Michigatari icon" width="128">
+  <img src="public/wide-logo-large.png" alt="michigatari logo" width="128">
 </p>
 
-# Michigatari
+# michigatari
 
-**Michigatari** ("path + story" in Japanese) creates animated map sequences for travel vlogs: capture keyframes on an
+**michigatari** ("path + story" in Japanese) creates animated map sequences for travel vlogs: capture keyframes on an
 interactive map, add animated markers, labels, routes, and region outlines,
 and export the result as video. Runs entirely in the browser.
 
@@ -14,7 +14,7 @@ Built with [MapLibre GL JS](https://maplibre.org/) and
 
 Region search uses [Nominatim](https://nominatim.org/) and road routing uses
 the public [OSRM](https://project-osrm.org/) demo server — community-run OSM
-services suitable for light personal use only. If you host Michigatari for
+services suitable for light personal use only. If you host michigatari for
 others, swap in your own providers (the base URLs live in `src/providers/`).
 
 ## Status
@@ -37,7 +37,7 @@ not support video export yet.
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) (note the CLA).
 
-If Michigatari is useful to you, you can say thanks via
+If michigatari is useful to you, you can say thanks via
 [GitHub Sponsors](https://github.com/sponsors/mikegillan) or
 [Ko-fi](https://ko-fi.com/mikegillan).
 
