@@ -24,6 +24,9 @@ export interface AppConfig {
   roadRoute: typeof defaultRoadRoute;
   /** Fallback attribution when a project's styleUrl isn't in `styles`. */
   exportAttribution: string;
+  /** Image burned into the top-left of exports (michigatari branding).
+   * null disables it — the pro build's watermark-free perk. */
+  exportWatermark: string | null;
   /**
    * Offer a "no burned-in attribution" export toggle. Off in the public build:
    * attribution must then travel in the video description instead (OSMF video
@@ -43,6 +46,7 @@ export const appConfig: AppConfig = {
   searchRegions: defaultSearchRegions,
   roadRoute: defaultRoadRoute,
   exportAttribution: OFM_ATTRIBUTION,
+  exportWatermark: '/wide-logo.png',
 };
 
 export function styleOptionFor(styleUrl: string): StyleOption | undefined {

@@ -126,6 +126,15 @@ export async function exportVideo(
     const ctx = composite.getContext('2d')!;
     const fontPx = Math.max(11, Math.round(height * 0.015));
 
+    // Branding watermark (top-left). A missing asset must not fail the export.
+    let watermark: ImageBitmap | null = null;
+    if (appConfig.exportWatermark) {
+      try {
+        const res = await fetch(appConfig.exportWatermark);
+        watermark = await createImageBitmap(await res.blob());
+      } catch { /* export continues unbranded */ }
+    }
+
     exportMap = createExportMap(project);
     await renderFrames(exportMap.map, project, {
       shouldCancel: () => {
@@ -177,6 +186,14 @@ export async function exportVideo(
           ctx.fillText(label, width - w + pad, height - h / 2);
         }
         if (info.showCompass) drawCompass(ctx, height, info.bearing);
+        if (watermark) {
+          const h = Math.max(24, Math.round(height * 0.05));
+          const w = Math.round((watermark.width / watermark.height) * h);
+          const margin = Math.round(height * 0.02);
+          ctx.globalAlpha = 0.9;
+          ctx.drawImage(watermark, margin, margin, w, h);
+          ctx.globalAlpha = 1;
+        }
 
         const frame = new VideoFrame(composite, {
           timestamp: frameTimestampUs(i, fps),
@@ -191,6 +208,7 @@ export async function exportVideo(
       },
     });
 
+    watermark?.close();
     if (cancelled) {
       if (enc.state !== 'closed') enc.close();
       if (target.kind === 'stream') await target.stream.abort();
