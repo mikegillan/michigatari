@@ -19,13 +19,30 @@ function classifyLayer(layer: LayerSpecification): DetailCategory {
 const MINOR_PLACE_CLASSES = ['town', 'village', 'suburb', 'hamlet', 'quarter', 'neighbourhood', 'isolated_dwelling', 'island'];
 const MAJOR_PLACE_CLASSES = ['continent', 'country', 'state', 'province', 'city'];
 
+// A negated match — ["match", x, [classes], false, true] — is an exclusion
+// list: the layer shows everything NOT listed (the bundled styles' catch-all
+// `label_other`: suburbs, hamlets, islands). If majors are excluded, what the
+// layer actually shows is minor. Recurses for nesting inside ["all", ...].
+// ponytail: only this negation shape is handled; add legacy ["!in", ...] if a
+// style using it ever ships.
+function excludesMajors(filter: unknown): boolean {
+  if (!Array.isArray(filter)) return false;
+  if (filter[0] === 'match' && filter[3] === false && filter[4] === true) {
+    const listed = JSON.stringify(filter[2] ?? []);
+    return MAJOR_PLACE_CLASSES.some((c) => listed.includes(`"${c}"`));
+  }
+  return filter.some(excludesMajors);
+}
+
 // ponytail: styles split place labels into per-class layers, so instead of
 // rewriting layer filters (fragile across legacy/expression syntaxes) we grep
 // the filter JSON for class names and toggle whole layers. A layer mixing
 // major+minor classes stays visible — degrade by showing more, never less.
 function placeLevel(layer: LayerSpecification): 'major' | 'minor' {
-  const filter = 'filter' in layer && layer.filter !== undefined ? JSON.stringify(layer.filter) : null;
-  if (!filter) return 'major'; // unfiltered place layer: keep
+  const raw = 'filter' in layer ? layer.filter : undefined;
+  if (raw === undefined) return 'major'; // unfiltered place layer: keep
+  if (excludesMajors(raw)) return 'minor';
+  const filter = JSON.stringify(raw);
   const mentionsMajor = MAJOR_PLACE_CLASSES.some((c) => filter.includes(`"${c}"`));
   const mentionsMinor = MINOR_PLACE_CLASSES.some((c) => filter.includes(`"${c}"`));
   return mentionsMinor && !mentionsMajor ? 'minor' : 'major';

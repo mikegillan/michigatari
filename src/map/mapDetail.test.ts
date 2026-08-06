@@ -56,6 +56,18 @@ it('a layer mixing major and minor classes stays visible at major level', () => 
   expect(detailVisibility(mixed, { placeLabels: 'major' })).toBe('show');
 });
 
+// All bundled styles have a `label_other` layer whose filter is an EXCLUSION
+// list (class NOT IN [city, country, ...]) — i.e. suburbs/hamlets/islands.
+// Grepping it for class names sees "city" and wrongly keeps it at major level.
+it('a negated-match layer excluding major classes is minor', () => {
+  const labelOther = {
+    ...city, id: 'label_other',
+    filter: ['match', ['get', 'class'], ['city', 'continent', 'country', 'state', 'town', 'village'], false, true],
+  } as LayerSpecification;
+  expect(detailVisibility(labelOther, { placeLabels: 'major' })).toBe('hide');
+  expect(detailVisibility(labelOther, { placeLabels: 'all' })).toBe('show');
+});
+
 it('poi/roads/boundaries toggle independently', () => {
   expect(detailVisibility(poi, { poiLabels: false })).toBe('hide');
   expect(detailVisibility(road, { roads: false })).toBe('hide');
