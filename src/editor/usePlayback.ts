@@ -5,6 +5,15 @@ import { sceneAt } from '../engine/scene';
 import { currentZoomOffset, mapRef } from './mapRef';
 import { applyElements } from '../map/applyScene';
 
+/** Element states at timeMs without touching the camera — edit-mode display
+ * follows the playhead, but project edits must not yank the user's framing. */
+export function applySceneElements(timeMs: number): void {
+  const map = mapRef.current;
+  const { project } = useEditorStore.getState();
+  if (!map || project.keyframes.length === 0) return; // sceneAt throws on empty projects
+  applyElements(map, project, sceneAt(project, timeMs).elements);
+}
+
 export function applyPreviewFrame(timeMs: number): void {
   const map = mapRef.current;
   const { project, displayKfIndex, setDisplayKfIndex } = useEditorStore.getState();

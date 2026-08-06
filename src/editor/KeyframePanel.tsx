@@ -5,6 +5,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { useEditorStore } from './store';
 import { cameraFromMap, currentZoomOffset, mapRef } from './mapRef';
 import { captureThumbnail } from './captureThumbnail';
+import { applyPreviewFrame } from './usePlayback';
+import { computeTimeline } from '../engine/timeline';
 import { MapSettingsControls } from './MapSettingsControls';
 import { effectiveMapSettings } from '../engine/mapSettings';
 import { EASINGS } from '../engine/easing';
@@ -21,9 +23,15 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
   // "Working on" indicator: new elements bind to this keyframe by default.
   const selected = useEditorStore((s) => Math.min(s.displayKfIndex, s.project.keyframes.length - 1) === index);
 
+  // Selecting a keyframe moves the playhead to its arrival: camera, element
+  // states, and the keyframe-relative clock all line up for timing work.
   const jumpTo = () => {
-    useEditorStore.getState().setDisplayKfIndex(index); // show this keyframe's effective map settings
-    mapRef.current?.jumpTo({ ...kf.camera, zoom: kf.camera.zoom - currentZoomOffset() });
+    const { setDisplayKfIndex, setPlaying, setTimeMs, project } = useEditorStore.getState();
+    setDisplayKfIndex(index);
+    setPlaying(false);
+    const arrival = computeTimeline(project).arrivalMs.get(kf.id) ?? 0;
+    setTimeMs(arrival);
+    applyPreviewFrame(arrival);
   };
 
   const updateFromView = async () => {

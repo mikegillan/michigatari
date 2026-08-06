@@ -7,11 +7,9 @@ import { activeKeyframeId, useEditorStore } from './store';
 import { mapRef } from './mapRef';
 import { captureThumbnail } from './captureThumbnail';
 import { syncElementLayers } from '../map/layerSync';
-import { applyElements } from '../map/applyScene';
 import { applyMapDetail } from '../map/mapDetail';
 import { effectiveMapSettings } from '../engine/mapSettings';
-import { allShownStates } from './editorScene';
-import { applyPreviewFrame } from './usePlayback';
+import { applyPreviewFrame, applySceneElements } from './usePlayback';
 import { CaptureBar } from './CaptureBar';
 import { createArcRoute, createLabel, createMarker } from './elementDefaults';
 
@@ -24,7 +22,7 @@ function resyncStyleState(map: maplibregl.Map): void {
   applyMapDetail(map, effective.mapDetail);
   syncElementLayers(map, project, effective.styleUrl);
   if (mode === 'edit') {
-    applyElements(map, project, allShownStates(project.elements));
+    applySceneElements(timeMs); // display follows the playhead; camera stays put
   } else {
     applyPreviewFrame(timeMs);
   }
@@ -193,7 +191,7 @@ export function MapView() {
         if (!projectChanged) return;
         syncElementLayers(map, state.project, effective.styleUrl);
         if (state.mode === 'edit') {
-          applyElements(map, state.project, allShownStates(state.project.elements));
+          applySceneElements(state.timeMs);
         }
       }),
     [],
