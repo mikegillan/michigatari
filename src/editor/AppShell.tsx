@@ -43,7 +43,8 @@ export function EditorShell({ header, navbar, aside, main, footer, panelsCollaps
       <AppShell.Main style={{ display: 'flex', height: 'calc(100dvh - 48px - 72px)' }}>
         {main}
       </AppShell.Main>
-      <AppShell.Footer p="sm">{footer}</AppShell.Footer>
+      {/* above navbar/aside (z 101) so the playhead label isn't clipped by the panels */}
+      <AppShell.Footer p="sm" style={{ zIndex: 102 }}>{footer}</AppShell.Footer>
     </AppShell>
   );
 }
