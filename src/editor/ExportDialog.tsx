@@ -102,6 +102,8 @@ export function ExportDialog() {
         // revoked: the player tab range-requests it for as long as it lives.
         const savedHandle = handle;
         const savedBlob = result.blob;
+        // the picker knows what the user actually named the file
+        const savedName = handle?.name ?? `michigatari.${ext}`;
         const openVideo = savedHandle
           ? () => void savedHandle.getFile().then((f) => window.open(URL.createObjectURL(f), '_blank'))
           : savedBlob
@@ -131,15 +133,15 @@ export function ExportDialog() {
             title: 'Export complete',
             autoClose: false,
             message: withOpenButton(copied
-              ? `Saved michigatari.${ext}. Attribution copied to clipboard — paste "${credit}" into your video description.`
-              : `Saved michigatari.${ext}. Add "${credit}" to your video description (attribution is required).`),
+              ? `Saved ${savedName}. Attribution copied to clipboard — paste "${credit}" into your video description.`
+              : `Saved ${savedName}. Add "${credit}" to your video description (attribution is required).`),
           });
         } else {
           notifications.show({
             color: 'green',
             title: 'Export complete',
             autoClose: 10_000,
-            message: withOpenButton(`Saved michigatari.${ext}`),
+            message: withOpenButton(`Saved ${savedName}`),
           });
         }
         setOpened(false); // done — get out of the way
