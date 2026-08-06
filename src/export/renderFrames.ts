@@ -226,6 +226,7 @@ function rebuildElementLayers(map: MapLibreMap, project: Project, activeStyleUrl
           map.setPaintProperty(layerId, 'circle-opacity-transition', { duration: 0, delay: 0 });
           map.setPaintProperty(layerId, 'circle-stroke-opacity-transition', { duration: 0, delay: 0 });
           map.setPaintProperty(layerId, 'circle-radius-transition', { duration: 0, delay: 0 });
+          map.setPaintProperty(`${layerId}-text`, 'text-opacity-transition', { duration: 0, delay: 0 });
           break;
         case 'label':
           map.setPaintProperty(layerId, 'text-opacity-transition', { duration: 0, delay: 0 });

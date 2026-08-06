@@ -26,6 +26,18 @@ export function createElementLayers(map: MapLibreMap, el: Element, fontStack: st
           'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0,
         },
       });
+      // optional marker label: rides the same source, offset above the dot
+      map.addLayer({
+        id: `${id}-text`, type: 'symbol', source: id,
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 14,
+          'text-font': fontStack,
+          'text-anchor': 'bottom',
+          'text-offset': [0, -0.8],
+        },
+        paint: { 'text-color': color, 'text-opacity': 0, 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
+      });
       break;
     case 'label':
       map.addLayer({
@@ -72,10 +84,15 @@ export function applyElements(
 
     switch (el.type) {
       case 'marker':
-        source.setData(state.visible ? collection({ type: 'Point', coordinates: el.data.lngLat }) : EMPTY);
+        source.setData(
+          state.visible
+            ? collection({ type: 'Point', coordinates: el.data.lngLat }, { label: el.data.label ?? '' })
+            : EMPTY,
+        );
         map.setPaintProperty(id, 'circle-opacity', state.opacity);
         map.setPaintProperty(id, 'circle-stroke-opacity', state.opacity);
         map.setPaintProperty(id, 'circle-radius', Number(el.style.size ?? 8) * Math.max(0, state.scale));
+        map.setPaintProperty(`${id}-text`, 'text-opacity', state.opacity);
         break;
       case 'label':
         source.setData(

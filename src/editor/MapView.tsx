@@ -30,6 +30,18 @@ function resyncStyleState(map: maplibregl.Map): void {
   }
 }
 
+// Point elements (markers, labels) are draggable in edit mode — clicks are
+// rarely pixel-perfect. Routes and regions are not: roads re-snap via their
+// refresh button, regions come from search.
+function draggableAt(map: maplibregl.Map, point: maplibregl.Point) {
+  const { project } = useEditorStore.getState();
+  const feat = map.queryRenderedFeatures(point).find((f) => f.layer.id.startsWith('el-'));
+  if (!feat) return null;
+  const id = feat.layer.id.slice(3).replace(/-(text|fill)$/, '');
+  const el = project.elements.find((x) => x.id === id);
+  return el && (el.type === 'marker' || el.type === 'label') ? el : null;
+}
+
 // North indicator, bottom-left; rotates so it always points at map-north.
 function CompassOverlay() {
   const show = useEditorStore(
@@ -102,6 +114,48 @@ export function MapView() {
       }
     });
     map.on('rotate', () => useEditorStore.getState().setMapBearing(map.getBearing()));
+    // Drag-to-reposition for point elements. Live updates write straight to
+    // the geojson source; the store commit (and its full re-sync) lands once
+    // on drop.
+    let dragging = false;
+    map.on('mousedown', (e) => {
+      const { mode, placing } = useEditorStore.getState();
+      if (mode !== 'edit' || placing) return;
+      const el = draggableAt(map, e.point);
+      if (!el) return;
+      e.preventDefault(); // keep dragPan from starting
+      dragging = true;
+      map.getCanvas().style.cursor = 'grabbing';
+      const source = map.getSource(`el-${el.id}`) as maplibregl.GeoJSONSource | undefined;
+      const props = el.type === 'label' ? { text: el.data.text } : { label: el.data.label ?? '' };
+      let last = el.data.lngLat;
+      const onMove = (ev: maplibregl.MapMouseEvent) => {
+        last = [ev.lngLat.lng, ev.lngLat.lat];
+        source?.setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: last } }],
+        });
+      };
+      const onUp = () => {
+        map.off('mousemove', onMove);
+        dragging = false;
+        map.getCanvas().style.cursor = '';
+        if (last !== el.data.lngLat) {
+          useEditorStore.getState().updateElement(el.id, (x) => {
+            if (x.type === 'marker') return { ...x, data: { ...x.data, lngLat: last } };
+            if (x.type === 'label') return { ...x, data: { ...x.data, lngLat: last } };
+            return x;
+          });
+        }
+      };
+      map.on('mousemove', onMove);
+      map.once('mouseup', onUp);
+    });
+    map.on('mousemove', (e) => {
+      const { mode, placing } = useEditorStore.getState();
+      if (dragging || mode !== 'edit' || placing) return; // placing owns the crosshair cursor
+      map.getCanvas().style.cursor = draggableAt(map, e.point) ? 'move' : '';
+    });
     map.on('load', () => {
       if (cancelled) return;
       mapRef.current = map;

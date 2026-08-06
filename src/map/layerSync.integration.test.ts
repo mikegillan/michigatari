@@ -139,7 +139,7 @@ it('sets EMPTY data on an invisible element\'s source via a LATER setData call, 
   applyElements(asMap(fake), project([el]), visible);
   expect(fake.sources.get('el-mk1')?.data).toEqual({
     type: 'FeatureCollection',
-    features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: el.data.lngLat } }],
+    features: [{ type: 'Feature', properties: { label: '' }, geometry: { type: 'Point', coordinates: el.data.lngLat } }],
   });
 
   const invisible: Record<string, ElementScene> = { mk1: { visible: false, opacity: 0, scale: 0, progress: 0 } };
@@ -176,4 +176,28 @@ it('applyScene drives the map camera to the keyframe pose and re-evaluates eleme
   const radius = fake.layers.find((l) => l.id === 'el-mk1')?.paint?.['circle-radius'] as number;
   expect(radius).not.toBe(10); // default size — pop overshoot means it isn't resting there
   expect(radius).toBeGreaterThanOrEqual(0);
+});
+
+// Markers can carry a text label: a -text symbol layer sharing the marker's
+// source. It must live and die with the marker and never be mistaken for an
+// element of its own during structural sync.
+it('a labeled marker gets a -text layer that syncs, animates, and removes with it', () => {
+  const fake = createFakeMap();
+  const el: MarkerElement = { ...marker(), data: { lngLat: [1, 2], label: 'Osaka' } };
+  syncElementLayers(asMap(fake), project([el]));
+  expect(fake.layers.map((l) => l.id).sort()).toEqual(['el-mk1', 'el-mk1-text']);
+
+  // idempotent: a second sync must not duplicate or remove the text layer
+  syncElementLayers(asMap(fake), project([el]));
+  expect(fake.layers.filter((l) => l.id === 'el-mk1-text')).toHaveLength(1);
+
+  // visible marker publishes the label text and fades the text with itself
+  applyElements(asMap(fake), project([el]), { mk1: { visible: true, opacity: 0.5, scale: 1, progress: 1 } });
+  const data = fake.sources.get('el-mk1')!.data as { features: Array<{ properties: { label?: string } }> };
+  expect(data.features[0].properties.label).toBe('Osaka');
+  expect(fake.layers.find((l) => l.id === 'el-mk1-text')!.paint!['text-opacity']).toBe(0.5);
+
+  syncElementLayers(asMap(fake), project([]));
+  expect(fake.layers).toHaveLength(0);
+  expect(fake.sources.size).toBe(0);
 });

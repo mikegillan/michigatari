@@ -9,7 +9,7 @@ import type { Element } from '../engine/types';
 
 function rowTitle(el: Element): string {
   switch (el.type) {
-    case 'marker': return 'Marker';
+    case 'marker': return el.data.label?.trim() ? el.data.label : 'Marker';
     case 'label': return 'Label';
     case 'route': return el.data.mode === 'arc' ? 'Route (arc)' : 'Route (road)';
     case 'region': return el.data.query;
@@ -88,6 +88,18 @@ export function ElementRow({ element }: { element: Element }) {
               const text = e.currentTarget.value;
               updateElement(element.id, (el) =>
                 el.type === 'label' ? { ...el, data: { ...el.data, text } } : el,
+              );
+            }}
+          />
+        )}
+        {element.type === 'marker' && (
+          <TextInput
+            size="xs" label="Label" placeholder="Optional text above the dot"
+            value={element.data.label ?? ''}
+            onChange={(e) => {
+              const label = e.currentTarget.value;
+              updateElement(element.id, (el) =>
+                el.type === 'marker' ? { ...el, data: { ...el.data, label } } : el,
               );
             }}
           />

@@ -67,7 +67,7 @@ export interface AnimationBinding<A extends string> {
   easing: EasingName;
 }
 
-export interface MarkerData { lngLat: LngLat }
+export interface MarkerData { lngLat: LngLat; label?: string }
 export interface LabelData { lngLat: LngLat; text: string }
 export interface RouteData {
   mode: 'arc' | 'road';

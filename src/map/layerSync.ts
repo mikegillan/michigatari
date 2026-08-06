@@ -31,12 +31,13 @@ export function syncElementLayers(
 ): void {
   const existingIds = map
     .getStyle()
-    .layers.filter((l) => l.id.startsWith('el-') && !l.id.endsWith('-fill'))
+    .layers.filter((l) => l.id.startsWith('el-') && !l.id.endsWith('-fill') && !l.id.endsWith('-text'))
     .map((l) => l.id.slice(3));
   const plan = planLayerSync(project, existingIds);
   const byId = new Map(project.elements.map((e) => [e.id, e]));
 
   for (const id of plan.remove) {
+    if (map.getLayer(`el-${id}-text`)) map.removeLayer(`el-${id}-text`); // shares el-${id}'s source
     for (const layerId of [`el-${id}`, `el-${id}-fill`]) {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(layerId)) map.removeSource(layerId);
@@ -53,6 +54,7 @@ export function syncElementLayers(
     switch (el.type) {
       case 'marker':
         map.setPaintProperty(layerId, 'circle-color', color);
+        map.setPaintProperty(`${layerId}-text`, 'text-color', color);
         break;
       case 'label':
         map.setPaintProperty(layerId, 'text-color', color);
