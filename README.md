@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="public/wide-logo-large.png" alt="michigatari logo" width="128">
+  <img src="public/wide-logo-large.png" alt="michigatari logo" width="384">
 </p>
-
-# michigatari
 
 **michigatari** ("path + story" in Japanese) creates animated map sequences for travel vlogs: capture keyframes on an
 interactive map, add animated markers, labels, routes, and region outlines,
