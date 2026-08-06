@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { notifications } from '@mantine/notifications';
 import './MapView.css';
 import { useEditorStore } from './store';
 import { mapRef } from './mapRef';
+import { captureThumbnail } from './captureThumbnail';
 import { syncElementLayers } from '../map/layerSync';
 import { applyElements } from '../map/applyScene';
 import { applyMapDetail } from '../map/mapDetail';
@@ -143,15 +144,40 @@ export function MapView() {
     [],
   );
 
-  // Style URL changes rebuild detail visibility and element layers after the new style loads.
+  // Style URL changes rebuild detail visibility and element layers after the
+  // new style loads. A full-res snapshot of the outgoing style is overlaid and
+  // faded out once the new style has settled, so the swap isn't abrupt.
+  const [fadeSnapshot, setFadeSnapshot] = useState<string | null>(null);
+  const [fadingOut, setFadingOut] = useState(false);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setStyle(styleUrl);
-    const handler = () => resyncStyleState(map);
-    map.once('style.load', handler);
+    let cancelled = false;
+    let removeTimer = 0;
+    const onStyleLoad = () => {
+      resyncStyleState(map);
+      map.once('idle', onIdle);
+    };
+    const onIdle = () => {
+      if (cancelled) return;
+      setFadingOut(true); // CSS opacity transition does the fade
+      removeTimer = window.setTimeout(() => {
+        setFadeSnapshot(null);
+        setFadingOut(false);
+      }, 600);
+    };
+    void captureThumbnail(map, map.getCanvas().width).then((snapshot) => {
+      if (cancelled) return;
+      setFadeSnapshot(snapshot);
+      setFadingOut(false);
+      map.setStyle(styleUrl);
+      map.once('style.load', onStyleLoad);
+    });
     return () => {
-      map.off('style.load', handler);
+      cancelled = true;
+      clearTimeout(removeTimer);
+      map.off('style.load', onStyleLoad);
+      map.off('idle', onIdle);
     };
   }, [styleUrl]);
 
@@ -170,6 +196,9 @@ export function MapView() {
     <div className="map-stage">
       <div className="map-frame" data-aspect={aspect}>
         <div ref={containerRef} className="map-canvas" />
+        {fadeSnapshot && (
+          <img className={`map-style-fade${fadingOut ? ' out' : ''}`} src={fadeSnapshot} alt="" />
+        )}
         <CompassOverlay />
         {mode === 'preview' && <div className="map-block-overlay" />}
         <CaptureBar />

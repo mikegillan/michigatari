@@ -157,6 +157,12 @@ export async function exportVideo(
         }
 
         ctx.drawImage(canvas, 0, 0); // always: the composite canvas is the frame source
+        if (info.styleFade) {
+          // cross-fade out of the previous basemap style
+          ctx.globalAlpha = info.styleFade.alpha;
+          ctx.drawImage(info.styleFade.image, 0, 0);
+          ctx.globalAlpha = 1;
+        }
         if (attribution) {
           // per-frame: keyframe style overrides change which provider to credit
           const label = styleOptionFor(info.styleUrl)?.attribution ?? appConfig.exportAttribution;

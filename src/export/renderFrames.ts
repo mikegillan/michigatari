@@ -60,7 +60,13 @@ export interface FrameInfo {
   /** Active basemap at this frame (attribution must credit it). */
   styleUrl: string;
   showCompass: boolean;
+  /** Cross-fade out of the previous style: draw `image` over the frame at `alpha`. */
+  styleFade?: { image: ImageBitmap; alpha: number };
 }
+
+// Style swaps happen on arrival at a keyframe, while the camera holds still —
+// so a cross-fade is a blend of two static renderings of the same pose.
+const STYLE_FADE_MS = 500;
 
 // Mid-export style swap: setStyle destroys all layers; waits for the new
 // style, then the caller must rebuild element layers and detail visibility.
@@ -131,6 +137,7 @@ export async function renderFrames(
 
     let activeStyleUrl = effectiveMapSettings(project, 0).styleUrl;
     let appliedDetailJson = ''; // forces the first applyMapDetail
+    let fade: { image: ImageBitmap; startMs: number; durationMs: number } | null = null;
     rebuildElementLayers(map, project, activeStyleUrl);
 
     const timeline = computeTimeline(project);
@@ -141,12 +148,26 @@ export async function renderFrames(
       if (hooks.shouldCancel?.()) return;
       resourceErrorSinceFrameStart = false;
       const timeMs = frameTimeMs(i, fps, timeline.totalMs);
-      const effective = effectiveMapSettings(project, keyframeIndexAt(timeline, timeMs));
+      const arrivalIndex = keyframeIndexAt(timeline, timeMs);
+      const effective = effectiveMapSettings(project, arrivalIndex);
 
       // Keyframe overrides: swap the basemap on arrival frames, re-apply
       // detail visibility whenever it changes. Frame times are monotonic, so
       // each swap happens exactly once.
       if (effective.styleUrl !== activeStyleUrl) {
+        // Render the arrival pose in the OLD style once and keep it: the next
+        // frames cross-fade from it. If the old style stalls, skip the fade
+        // rather than the export.
+        applyScene(map, project, sceneAt(project, timeMs, timeline));
+        if ((await waitForIdle(map, 10_000)) === 'idle') {
+          fade?.image.close();
+          fade = {
+            image: await createImageBitmap(map.getCanvas()),
+            startMs: timeMs,
+            // never fade past the hold: the camera starts moving after it
+            durationMs: Math.min(STYLE_FADE_MS, project.keyframes[arrivalIndex].holdMs),
+          };
+        }
         await swapStyle(map, effective.styleUrl);
         activeStyleUrl = effective.styleUrl;
         appliedDetailJson = '';
@@ -169,12 +190,24 @@ export async function renderFrames(
         if (settled === 'idle' && resourceErrorSinceFrameStart) settled = 'timeout';
       }
       if (settled === 'timeout') throw new ExportStalledError(i);
+      let styleFade: FrameInfo['styleFade'];
+      if (fade) {
+        const alpha = fade.durationMs > 0 ? 1 - (timeMs - fade.startMs) / fade.durationMs : 0;
+        if (alpha > 0) {
+          styleFade = { image: fade.image, alpha };
+        } else {
+          fade.image.close();
+          fade = null;
+        }
+      }
       await hooks.onFrame(map.getCanvas(), i, total, {
         bearing: scene.camera.bearing,
         styleUrl: activeStyleUrl,
         showCompass: effective.mapDetail.showCompass ?? false,
+        styleFade,
       });
     }
+    fade?.image.close();
   } finally {
     map.off('error', onError);
   }
