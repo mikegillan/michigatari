@@ -1,5 +1,5 @@
 import { beforeEach, expect, it } from 'vitest';
-import { blankProject, newId, useEditorStore } from './store';
+import { activeKeyframeId, blankProject, newId, useEditorStore } from './store';
 import type { MarkerElement } from '../engine/types';
 
 beforeEach(() => {
@@ -99,4 +99,15 @@ it('appendPlacingWaypoint is a no-op outside route placing', () => {
   useEditorStore.getState().setPlacing({ kind: 'marker' });
   useEditorStore.getState().appendPlacingWaypoint([1, 2]);
   expect(useEditorStore.getState().placing).toEqual({ kind: 'marker' });
+});
+
+// New elements bind to the keyframe being worked on — binding everything to
+// keyframe 1 surprised users whose markers appeared at the start of the video.
+it('activeKeyframeId follows displayKfIndex and clamps after deletions', () => {
+  const s = useEditorStore.getState();
+  const a = s.addKeyframe(CAM);
+  const b = useEditorStore.getState().addKeyframe(CAM);
+  expect(activeKeyframeId({ ...useEditorStore.getState(), displayKfIndex: 1 })).toBe(b);
+  expect(activeKeyframeId({ ...useEditorStore.getState(), displayKfIndex: 0 })).toBe(a);
+  expect(activeKeyframeId({ ...useEditorStore.getState(), displayKfIndex: 99 })).toBe(b); // clamped
 });

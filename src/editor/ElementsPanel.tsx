@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useEditorStore, type PlacingState } from './store';
+import { activeKeyframeId, useEditorStore, type PlacingState } from './store';
 import { ElementRow } from './ElementRow';
 import { RegionSearch } from './RegionSearch';
 import { appConfig } from '../config';
@@ -35,8 +35,8 @@ export function ElementsPanel() {
 
   const finishRoad = async () => {
     const before = useEditorStore.getState().placing;
-    const firstKf = useEditorStore.getState().project.keyframes[0]?.id;
-    if (!before || before.kind !== 'route' || before.mode !== 'road' || !firstKf) return;
+    const kfId = activeKeyframeId(useEditorStore.getState());
+    if (!before || before.kind !== 'route' || before.mode !== 'road' || !kfId) return;
     setFetching(true);
     try {
       const geometry = await appConfig.roadRoute(before.waypoints);
@@ -55,7 +55,7 @@ export function ElementsPanel() {
         }
         return;
       }
-      useEditorStore.getState().addElement(createRoadRoute(before.waypoints, geometry, firstKf));
+      useEditorStore.getState().addElement(createRoadRoute(before.waypoints, geometry, kfId));
       useEditorStore.getState().setPlacing(null);
     } catch (err) {
       notifications.show({ color: 'red', title: 'Routing failed', message: errorMessage(err) });

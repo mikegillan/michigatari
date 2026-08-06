@@ -19,6 +19,13 @@ export function blankProject(): Project {
 
 export type EditorMode = 'edit' | 'preview';
 
+/** The keyframe the user is working on (clamped — deletions can leave
+ * displayKfIndex past the end). New elements bind to it by default. */
+export function activeKeyframeId(s: { project: Project; displayKfIndex: number }): string | undefined {
+  const kfs = s.project.keyframes;
+  return (kfs[Math.min(s.displayKfIndex, kfs.length - 1)] ?? kfs[0])?.id;
+}
+
 export type PlacingState =
   | { kind: 'marker' }
   | { kind: 'label' }

@@ -3,7 +3,7 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { notifications } from '@mantine/notifications';
 import './MapView.css';
-import { useEditorStore } from './store';
+import { activeKeyframeId, useEditorStore } from './store';
 import { mapRef } from './mapRef';
 import { captureThumbnail } from './captureThumbnail';
 import { syncElementLayers } from '../map/layerSync';
@@ -91,22 +91,23 @@ export function MapView() {
       });
     });
     map.on('click', (e) => {
-      const { placing, mode: m, project, addElement, setPlacing, appendPlacingWaypoint } = useEditorStore.getState();
+      const state = useEditorStore.getState();
+      const { placing, mode: m, addElement, setPlacing, appendPlacingWaypoint } = state;
       if (!placing || m === 'preview') return;
       const lngLat: [number, number] = [e.lngLat.lng, e.lngLat.lat];
-      const firstKf = project.keyframes[0]?.id;
-      if (!firstKf) return; // add buttons are disabled without keyframes; belt and suspenders
+      const kfId = activeKeyframeId(state);
+      if (!kfId) return; // add buttons are disabled without keyframes; belt and suspenders
       if (placing.kind === 'marker') {
-        addElement(createMarker(lngLat, firstKf));
+        addElement(createMarker(lngLat, kfId));
         setPlacing(null);
       } else if (placing.kind === 'label') {
-        addElement(createLabel(lngLat, firstKf));
+        addElement(createLabel(lngLat, kfId));
         setPlacing(null);
       } else if (placing.kind === 'route' && placing.mode === 'arc') {
         if (placing.waypoints.length === 0) {
           appendPlacingWaypoint(lngLat);
         } else {
-          addElement(createArcRoute(placing.waypoints[0], lngLat, firstKf));
+          addElement(createArcRoute(placing.waypoints[0], lngLat, kfId));
           setPlacing(null);
         }
       } else if (placing.kind === 'route' && placing.mode === 'road') {

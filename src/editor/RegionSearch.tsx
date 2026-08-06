@@ -5,7 +5,7 @@ import type { RegionCandidate } from '../providers/nominatim';
 import { appConfig } from '../config';
 import { createRegion } from './elementDefaults';
 import { errorMessage } from './errors';
-import { useEditorStore } from './store';
+import { activeKeyframeId, useEditorStore } from './store';
 
 export function RegionSearch() {
   const hasKeyframes = useEditorStore((s) => s.project.keyframes.length > 0);
@@ -39,9 +39,9 @@ export function RegionSearch() {
   };
 
   const add = (candidate: RegionCandidate) => {
-    const firstKf = useEditorStore.getState().project.keyframes[0]?.id;
-    if (!firstKf) return;
-    addElement(createRegion(candidate, firstKf));
+    const kfId = activeKeyframeId(useEditorStore.getState());
+    if (!kfId) return;
+    addElement(createRegion(candidate, kfId));
     setQuery('');
     setResults([]);
   };

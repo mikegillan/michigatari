@@ -13,6 +13,9 @@ export function CaptureBar() {
     const map = mapRef.current;
     if (!camera || !map) return;
     const id = addKeyframe(camera);
+    // the new keyframe is now the one being worked on
+    const { project, setDisplayKfIndex } = useEditorStore.getState();
+    setDisplayKfIndex(project.keyframes.length - 1);
     setThumbnail(id, await captureThumbnail(map));
   };
 

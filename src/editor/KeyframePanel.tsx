@@ -18,6 +18,8 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
   const deleteKeyframe = useEditorStore((s) => s.deleteKeyframe);
   const setThumbnail = useEditorStore((s) => s.setThumbnail);
   const thumbnail = useEditorStore((s) => s.thumbnails[kf.id]);
+  // "Working on" indicator: new elements bind to this keyframe by default.
+  const selected = useEditorStore((s) => Math.min(s.displayKfIndex, s.project.keyframes.length - 1) === index);
 
   const jumpTo = () => {
     useEditorStore.getState().setDisplayKfIndex(index); // show this keyframe's effective map settings
@@ -28,6 +30,7 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
     const camera = cameraFromMap();
     const map = mapRef.current;
     if (!camera || !map) return;
+    useEditorStore.getState().setDisplayKfIndex(index);
     updateKeyframe(kf.id, { camera });
     setThumbnail(kf.id, await captureThumbnail(map));
   };
@@ -36,6 +39,7 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
   // Stored zoom is reference-viewport zoom; jumpTo converts (same as jumpTo above).
   const updateCamera = (patch: Partial<Keyframe['camera']>) => {
     const camera = { ...kf.camera, ...patch };
+    useEditorStore.getState().setDisplayKfIndex(index);
     updateKeyframe(kf.id, { camera });
     mapRef.current?.jumpTo({ ...camera, zoom: camera.zoom - currentZoomOffset() });
   };
@@ -45,7 +49,11 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
       ref={setNodeRef}
       withBorder
       padding="xs"
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        borderColor: selected ? 'var(--mantine-color-blue-5)' : undefined,
+      }}
     >
       <Group gap="xs" wrap="nowrap" align="flex-start">
         <div {...attributes} {...listeners} style={{ cursor: 'grab', alignSelf: 'center' }}>⠿</div>
