@@ -197,6 +197,11 @@ it('a labeled marker gets a -text layer that syncs, animates, and removes with i
   expect(data.features[0].properties.label).toBe('Osaka');
   expect(fake.layers.find((l) => l.id === 'el-mk1-text')!.paint!['text-opacity']).toBe(0.5);
 
+  // label text scales with the marker's size style (1.75x the dot radius)
+  const resized: MarkerElement = { ...el, style: { size: 16 } };
+  syncElementLayers(asMap(fake), project([resized]));
+  expect(fake.layers.find((l) => l.id === 'el-mk1-text')!.layout!['text-size']).toBe(28);
+
   syncElementLayers(asMap(fake), project([]));
   expect(fake.layers).toHaveLength(0);
   expect(fake.sources.size).toBe(0);

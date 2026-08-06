@@ -13,6 +13,11 @@ function collection(geometry: Geometry | null, properties: Record<string, unknow
     : EMPTY;
 }
 
+/** Marker label text scales with the dot: 1.75x its radius (14px at the default size 8). */
+export function markerLabelSize(el: { style: Record<string, string | number> }): number {
+  return Number(el.style.size ?? 8) * 1.75;
+}
+
 export function createElementLayers(map: MapLibreMap, el: Element, fontStack: string[]): void {
   const id = `el-${el.id}`;
   map.addSource(id, { type: 'geojson', data: EMPTY });
@@ -31,7 +36,7 @@ export function createElementLayers(map: MapLibreMap, el: Element, fontStack: st
         id: `${id}-text`, type: 'symbol', source: id,
         layout: {
           'text-field': ['get', 'label'],
-          'text-size': 14,
+          'text-size': markerLabelSize(el),
           'text-font': fontStack,
           'text-anchor': 'bottom',
           'text-offset': [0, -0.8],

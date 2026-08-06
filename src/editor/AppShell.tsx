@@ -7,14 +7,18 @@ interface EditorShellProps {
   aside?: ReactNode;
   main?: ReactNode;
   footer?: ReactNode;
+  /** Hide both side panels (preview mode: editing is disabled anyway, and
+   * collapsing makes that obvious instead of showing greyed-out controls). */
+  panelsCollapsed?: boolean;
 }
 
-export function EditorShell({ header, navbar, aside, main, footer }: EditorShellProps) {
+export function EditorShell({ header, navbar, aside, main, footer, panelsCollapsed = false }: EditorShellProps) {
+  const collapsed = { desktop: panelsCollapsed, mobile: panelsCollapsed };
   return (
     <AppShell
       header={{ height: 48 }}
-      navbar={{ width: 280, breakpoint: 0 }}
-      aside={{ width: 300, breakpoint: 0 }}
+      navbar={{ width: 280, breakpoint: 0, collapsed }}
+      aside={{ width: 300, breakpoint: 0, collapsed }}
       footer={{ height: 72 }}
       padding={0}
     >

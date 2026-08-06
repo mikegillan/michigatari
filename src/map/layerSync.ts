@@ -3,7 +3,7 @@ import type { GeoJSONSource } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
 import type { Project } from '../engine/types';
 import { elementFontStack } from '../config';
-import { createElementLayers } from './applyScene';
+import { createElementLayers, markerLabelSize } from './applyScene';
 
 export function planLayerSync(
   project: Project,
@@ -55,6 +55,7 @@ export function syncElementLayers(
       case 'marker':
         map.setPaintProperty(layerId, 'circle-color', color);
         map.setPaintProperty(`${layerId}-text`, 'text-color', color);
+        map.setLayoutProperty(`${layerId}-text`, 'text-size', markerLabelSize(el));
         break;
       case 'label':
         map.setPaintProperty(layerId, 'text-color', color);

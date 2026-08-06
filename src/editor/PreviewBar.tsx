@@ -70,7 +70,7 @@ export function PreviewBar() {
       />
       <Text size="xs" w={90} ta="right">{fmt(Math.min(timeMs, timeline.totalMs))} / {fmt(timeline.totalMs)}</Text>
       {mode === 'preview' && (
-        <Button size="xs" variant="light" onClick={exitPreview}>Exit preview</Button>
+        <Button size="xs" onClick={exitPreview}>Exit preview</Button>
       )}
     </Group>
   );
