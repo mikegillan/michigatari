@@ -1,4 +1,4 @@
-<p align="center">
+<p align="center" style="background: #F9F1E4; border-radius: 8px; padding-top: 16px;">
   <img src="public/wide-logo-large.png" alt="michigatari logo" width="384">
 </p>
 
