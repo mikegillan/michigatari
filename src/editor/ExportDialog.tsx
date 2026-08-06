@@ -53,12 +53,13 @@ export function ExportDialog() {
     const { project } = useEditorStore.getState();
     const ext = format === 'mp4' ? 'mp4' : 'webm';
     let target: ExportTarget = { kind: 'buffer' };
+    let handle: FileSystemFileHandle | null = null;
     const picker = (window as unknown as {
       showSaveFilePicker?: (o: object) => Promise<FileSystemFileHandle>;
     }).showSaveFilePicker;
     try {
       if (picker) {
-        const handle = await picker({
+        handle = await picker({
           suggestedName: `michigatari.${ext}`,
           types: [{ description: 'Video', accept: { [`video/${ext}`]: [`.${ext}`] } }],
         });
@@ -95,6 +96,27 @@ export function ExportDialog() {
           a.remove();
           setTimeout(() => URL.revokeObjectURL(a.href), 0);
         }
+        // The video is on disk (handle) or in memory (blob) — either way a
+        // blob URL plays it in a new tab. handle.getFile() is disk-backed and
+        // lazy, so this stays cheap even for 4K exports. The URL is never
+        // revoked: the player tab range-requests it for as long as it lives.
+        const savedHandle = handle;
+        const savedBlob = result.blob;
+        const openVideo = savedHandle
+          ? () => void savedHandle.getFile().then((f) => window.open(URL.createObjectURL(f), '_blank'))
+          : savedBlob
+            ? () => void window.open(URL.createObjectURL(savedBlob), '_blank')
+            : null;
+        const withOpenButton = (text: string) => (
+          <Stack gap={6}>
+            <Text size="sm">{text}</Text>
+            {openVideo && (
+              <Button size="compact-xs" variant="light" style={{ alignSelf: 'flex-start' }} onClick={openVideo}>
+                Open video
+              </Button>
+            )}
+          </Stack>
+        );
         if (appConfig.allowCleanExport && !burnAttribution) {
           // Attribution still required by the data license — hand the user the
           // credit line for their video description (OSMF video guidance).
@@ -108,13 +130,19 @@ export function ExportDialog() {
             color: 'green',
             title: 'Export complete',
             autoClose: false,
-            message: copied
+            message: withOpenButton(copied
               ? `Saved michigatari.${ext}. Attribution copied to clipboard — paste "${credit}" into your video description.`
-              : `Saved michigatari.${ext}. Add "${credit}" to your video description (attribution is required).`,
+              : `Saved michigatari.${ext}. Add "${credit}" to your video description (attribution is required).`),
           });
         } else {
-          notifications.show({ color: 'green', title: 'Export complete', message: `Saved michigatari.${ext}` });
+          notifications.show({
+            color: 'green',
+            title: 'Export complete',
+            autoClose: 10_000,
+            message: withOpenButton(`Saved michigatari.${ext}`),
+          });
         }
+        setOpened(false); // done — get out of the way
       }
     } catch (err) {
       notifications.show({ color: 'red', title: 'Export failed', message: errorMessage(err) });
