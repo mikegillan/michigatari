@@ -57,6 +57,36 @@ function createMuxer(
   };
 }
 
+// North indicator, bottom-left, rotated so it points at map-north — matches
+// the editor's CompassOverlay SVG (plate 8% of height, red north / grey south).
+function drawCompass(ctx: CanvasRenderingContext2D, height: number, bearing: number): void {
+  const r = Math.max(14, Math.round(height * 0.04));
+  const margin = Math.round(height * 0.025);
+  ctx.save();
+  ctx.translate(margin + r, height - margin - r);
+  ctx.rotate((-bearing * Math.PI) / 180);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  const u = r / 20;
+  ctx.fillStyle = '#d63031';
+  ctx.beginPath();
+  ctx.moveTo(0, -16 * u);
+  ctx.lineTo(-5 * u, 0);
+  ctx.lineTo(5 * u, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#8a8f98';
+  ctx.beginPath();
+  ctx.moveTo(-5 * u, 0);
+  ctx.lineTo(5 * u, 0);
+  ctx.lineTo(0, 16 * u);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 export async function exportVideo(
   project: Project,
   options: {
@@ -95,7 +125,6 @@ export async function exportVideo(
     composite.height = height;
     const ctx = composite.getContext('2d')!;
     const fontPx = Math.max(11, Math.round(height * 0.015));
-    const label = styleOptionFor(project.settings.styleUrl)?.attribution ?? appConfig.exportAttribution;
 
     exportMap = createExportMap(project);
     await renderFrames(exportMap.map, project, {
@@ -103,7 +132,7 @@ export async function exportVideo(
         cancelled = shouldCancel?.() ?? false;
         return cancelled;
       },
-      onFrame: async (canvas, i, total) => {
+      onFrame: async (canvas, i, total, info) => {
         if (encoderError) throw encoderError;
         if (enc.encodeQueueSize > 4) {
           await new Promise<void>((resolve) => {
@@ -129,6 +158,8 @@ export async function exportVideo(
 
         ctx.drawImage(canvas, 0, 0); // always: the composite canvas is the frame source
         if (attribution) {
+          // per-frame: keyframe style overrides change which provider to credit
+          const label = styleOptionFor(info.styleUrl)?.attribution ?? appConfig.exportAttribution;
           ctx.font = `${fontPx}px sans-serif`;
           const pad = Math.round(fontPx * 0.5);
           const w = ctx.measureText(label).width + pad * 2;
@@ -139,6 +170,7 @@ export async function exportVideo(
           ctx.textBaseline = 'middle';
           ctx.fillText(label, width - w + pad, height - h / 2);
         }
+        if (info.showCompass) drawCompass(ctx, height, info.bearing);
 
         const frame = new VideoFrame(composite, {
           timestamp: frameTimestampUs(i, fps),

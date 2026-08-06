@@ -19,3 +19,13 @@
 .map-canvas { position: absolute; inset: 0; }
 .map-block-overlay { position: absolute; inset: 0; z-index: 2; }
 .capture-bar { position: absolute; top: 8px; left: 8px; z-index: 3; }
+/* Mirrors the export burn-in: 8%-of-height plate, 2% margin, bottom-left. */
+.map-compass {
+  position: absolute;
+  left: 1.5%;
+  bottom: 2.5%;
+  height: 8%;
+  aspect-ratio: 1;
+  z-index: 1;
+  pointer-events: none;
+}

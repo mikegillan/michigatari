@@ -21,7 +21,14 @@ export function planLayerSync(
 // Structural sync: create/remove element layers and re-apply style-driven
 // properties. applyScene/applyElements only touch animated properties; the
 // editor calls this after every project mutation.
-export function syncElementLayers(map: MapLibreMap, project: Project): void {
+// `activeStyleUrl` is the basemap actually on the map — it can differ from
+// project.settings.styleUrl when a keyframe override is in effect, and element
+// labels must use the ACTIVE style's font stack.
+export function syncElementLayers(
+  map: MapLibreMap,
+  project: Project,
+  activeStyleUrl: string = project.settings.styleUrl,
+): void {
   const existingIds = map
     .getStyle()
     .layers.filter((l) => l.id.startsWith('el-') && !l.id.endsWith('-fill'))
@@ -35,7 +42,7 @@ export function syncElementLayers(map: MapLibreMap, project: Project): void {
       if (map.getSource(layerId)) map.removeSource(layerId);
     }
   }
-  const fontStack = elementFontStack(project.settings.styleUrl);
+  const fontStack = elementFontStack(activeStyleUrl);
   for (const id of plan.create) {
     createElementLayers(map, byId.get(id)!, fontStack);
   }

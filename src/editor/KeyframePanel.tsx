@@ -1,10 +1,12 @@
-import { Card, Group, Image, NumberInput, Select, Stack, Text, ActionIcon, Tooltip } from '@mantine/core';
+import { Card, Group, Image, NumberInput, Select, Stack, Switch, Text, ActionIcon, Tooltip } from '@mantine/core';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEditorStore } from './store';
 import { cameraFromMap, currentZoomOffset, mapRef } from './mapRef';
 import { captureThumbnail } from './captureThumbnail';
+import { MapSettingsControls } from './MapSettingsControls';
+import { effectiveMapSettings } from '../engine/mapSettings';
 import { EASINGS } from '../engine/easing';
 import type { EasingName, Keyframe } from '../engine/types';
 
@@ -18,6 +20,7 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
   const thumbnail = useEditorStore((s) => s.thumbnails[kf.id]);
 
   const jumpTo = () => {
+    useEditorStore.getState().setDisplayKfIndex(index); // show this keyframe's effective map settings
     mapRef.current?.jumpTo({ ...kf.camera, zoom: kf.camera.zoom - currentZoomOffset() });
   };
 
@@ -85,6 +88,32 @@ function KeyframeCard({ kf, index, isLast }: { kf: Keyframe; index: number; isLa
             label="Hold (ms)" size="xs" min={0} step={100} value={kf.holdMs}
             onChange={(v) => updateKeyframe(kf.id, { holdMs: Number(v) || 0 })}
           />
+          {index > 0 && (
+            <>
+              <Switch
+                size="xs" label="Override map settings"
+                description={kf.mapSettings ? 'Applies from this keyframe forward' : undefined}
+                checked={!!kf.mapSettings}
+                onChange={(e) => {
+                  useEditorStore.getState().setDisplayKfIndex(index);
+                  updateKeyframe(kf.id, {
+                    mapSettings: e.currentTarget.checked
+                      ? structuredClone(effectiveMapSettings(useEditorStore.getState().project, index))
+                      : undefined,
+                  });
+                }}
+              />
+              {kf.mapSettings && (
+                <MapSettingsControls
+                  value={kf.mapSettings}
+                  onChange={(mapSettings) => {
+                    useEditorStore.getState().setDisplayKfIndex(index);
+                    updateKeyframe(kf.id, { mapSettings });
+                  }}
+                />
+              )}
+            </>
+          )}
           {!isLast && (
             <>
               <NumberInput

@@ -8,6 +8,7 @@ import { mapRef } from './mapRef';
 import { syncElementLayers } from '../map/layerSync';
 import { applyElements } from '../map/applyScene';
 import { applyMapDetail } from '../map/mapDetail';
+import { effectiveMapSettings } from '../engine/mapSettings';
 import { allShownStates } from './editorScene';
 import { applyPreviewFrame } from './usePlayback';
 import { CaptureBar } from './CaptureBar';
@@ -17,9 +18,10 @@ import { createArcRoute, createLabel, createMarker } from './elementDefaults';
 // element layers, and the current display — all-shown in edit mode, the
 // current preview frame in preview mode (a swap mid-preview must not stomp it).
 function resyncStyleState(map: maplibregl.Map): void {
-  const { project, mode, timeMs } = useEditorStore.getState();
-  applyMapDetail(map, project.settings.mapDetail);
-  syncElementLayers(map, project);
+  const { project, mode, timeMs, displayKfIndex } = useEditorStore.getState();
+  const effective = effectiveMapSettings(project, displayKfIndex);
+  applyMapDetail(map, effective.mapDetail);
+  syncElementLayers(map, project, effective.styleUrl);
   if (mode === 'edit') {
     applyElements(map, project, allShownStates(project.elements));
   } else {
@@ -27,10 +29,30 @@ function resyncStyleState(map: maplibregl.Map): void {
   }
 }
 
+// North indicator, bottom-left; rotates so it always points at map-north.
+function CompassOverlay() {
+  const show = useEditorStore(
+    (s) => effectiveMapSettings(s.project, s.displayKfIndex).mapDetail.showCompass ?? false,
+  );
+  const bearing = useEditorStore((s) => s.mapBearing);
+  if (!show) return null;
+  return (
+    <div className="map-compass" style={{ transform: `rotate(${-bearing}deg)` }}>
+      <svg viewBox="0 0 40 40" width="100%" height="100%">
+        <circle cx="20" cy="20" r="19" fill="rgba(255,255,255,0.75)" />
+        <polygon points="20,4 15,20 25,20" fill="#d63031" />
+        <polygon points="15,20 25,20 20,36" fill="#8a8f98" />
+      </svg>
+    </div>
+  );
+}
+
 export function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const aspect = useEditorStore((s) => s.project.settings.aspect);
-  const styleUrl = useEditorStore((s) => s.project.settings.styleUrl);
+  // Effective style for the displayed keyframe context — per-keyframe
+  // overrides swap the basemap just like a project-level change would.
+  const styleUrl = useEditorStore((s) => effectiveMapSettings(s.project, s.displayKfIndex).styleUrl);
   const mode = useEditorStore((s) => s.mode);
   const initialStyleRef = useRef(useEditorStore.getState().project.settings.styleUrl);
 
@@ -78,12 +100,14 @@ export function MapView() {
         appendPlacingWaypoint(lngLat); // Finish button in the panel completes it (Task 6)
       }
     });
+    map.on('rotate', () => useEditorStore.getState().setMapBearing(map.getBearing()));
     map.on('load', () => {
       if (cancelled) return;
       mapRef.current = map;
-      const { project } = useEditorStore.getState();
-      if (project.settings.styleUrl !== initialStyleRef.current) {
-        map.setStyle(project.settings.styleUrl);
+      const { project, displayKfIndex } = useEditorStore.getState();
+      const effectiveUrl = effectiveMapSettings(project, displayKfIndex).styleUrl;
+      if (effectiveUrl !== initialStyleRef.current) {
+        map.setStyle(effectiveUrl);
         map.once('style.load', () => resyncStyleState(map));
       } else {
         resyncStyleState(map);
@@ -96,17 +120,22 @@ export function MapView() {
     };
   }, []);
 
-  // Structural sync + edit-mode display on every project change.
+  // Structural sync + edit-mode display on every project change; effective
+  // detail re-applies when the project or the displayed keyframe changes.
   useEffect(
     () =>
       useEditorStore.subscribe((state, prev) => {
         const map = mapRef.current;
-        if (!map || state.project === prev.project) return;
+        const projectChanged = state.project !== prev.project;
+        if (!map || (!projectChanged && state.displayKfIndex === prev.displayKfIndex)) return;
         if (!map.isStyleLoaded()) return; // initial sync happens in the load handler
-        if (state.project.settings.mapDetail !== prev.project.settings.mapDetail) {
-          applyMapDetail(map, state.project.settings.mapDetail);
+        const effective = effectiveMapSettings(state.project, state.displayKfIndex);
+        const prevDetail = effectiveMapSettings(prev.project, prev.displayKfIndex).mapDetail;
+        if (JSON.stringify(effective.mapDetail) !== JSON.stringify(prevDetail)) {
+          applyMapDetail(map, effective.mapDetail);
         }
-        syncElementLayers(map, state.project);
+        if (!projectChanged) return;
+        syncElementLayers(map, state.project, effective.styleUrl);
         if (state.mode === 'edit') {
           applyElements(map, state.project, allShownStates(state.project.elements));
         }
@@ -141,6 +170,7 @@ export function MapView() {
     <div className="map-stage">
       <div className="map-frame" data-aspect={aspect}>
         <div ref={containerRef} className="map-canvas" />
+        <CompassOverlay />
         {mode === 'preview' && <div className="map-block-overlay" />}
         <CaptureBar />
       </div>

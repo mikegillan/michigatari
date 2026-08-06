@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Button, Group, Modal, Progress, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core';
+import { Button, Group, Modal, Progress, SegmentedControl, Select, Stack, Switch, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useEditorStore } from './store';
 import { appConfig, styleOptionFor } from '../config';
@@ -9,6 +9,7 @@ import { exportDimensions, type ExportFormat } from '../export/encoderConfig';
 import { frameCount } from '../export/timing';
 import { probeExportFormats } from '../export/probe';
 import { exportVideo, type ExportTarget } from '../export/exportVideo';
+import type { Settings } from '../engine/types';
 
 type Phase =
   | { kind: 'idle' }
@@ -19,20 +20,27 @@ type Phase =
 export function ExportDialog() {
   const hasKeyframes = useEditorStore((s) => s.project.keyframes.length > 0);
   const setPlaying = useEditorStore((s) => s.setPlaying);
+  const updateSettings = useEditorStore((s) => s.updateSettings);
   const [opened, setOpened] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [format, setFormat] = useState<ExportFormat>('mp4');
   const [burnAttribution, setBurnAttribution] = useState(true);
   const cancelRef = useRef(false);
 
+  // Re-runs whenever resolution/fps change: encoder support depends on them
+  // (e.g. 4K60 needs a higher H.264 profile). Keeps the format choice when
+  // still supported.
+  const probe = async () => {
+    setPhase({ kind: 'probing' });
+    const support = await probeExportFormats(useEditorStore.getState().project.settings);
+    setFormat((f) => (support[f] ? f : support.mp4 ? 'mp4' : 'webm'));
+    setPhase({ kind: 'ready', ...support });
+  };
+
   const open = async () => {
     setPlaying(false);
     setOpened(true);
-    setPhase({ kind: 'probing' });
-    const { project } = useEditorStore.getState();
-    const support = await probeExportFormats(project.settings);
-    setFormat(support.mp4 ? 'mp4' : 'webm');
-    setPhase({ kind: 'ready', ...support });
+    await probe();
   };
 
   const close = () => {
@@ -142,6 +150,26 @@ export function ExportDialog() {
           )}
           {phase.kind === 'ready' && (phase.mp4 || phase.webm) && (
             <>
+              <Select
+                label="Resolution" size="xs"
+                data={[{ value: '1080p', label: '1080p' }, { value: '1440p', label: '1440p' }, { value: '4k', label: '4K' }]}
+                value={project.settings.resolution}
+                onChange={(v) => {
+                  if (!v) return;
+                  updateSettings({ resolution: v as Settings['resolution'] });
+                  void probe();
+                }}
+                allowDeselect={false}
+              />
+              <SegmentedControl
+                fullWidth size="xs"
+                data={[{ label: '30 fps', value: '30' }, { label: '60 fps', value: '60' }]}
+                value={String(project.settings.fps)}
+                onChange={(v) => {
+                  updateSettings({ fps: Number(v) as Settings['fps'] });
+                  void probe();
+                }}
+              />
               <SegmentedControl
                 fullWidth
                 data={[

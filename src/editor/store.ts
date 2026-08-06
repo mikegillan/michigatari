@@ -32,6 +32,12 @@ interface EditorStore {
   timeMs: number;
   thumbnails: Record<string, string>;
   placing: PlacingState;
+  /** Keyframe whose effective map settings the map currently displays
+   * (ephemeral, not persisted): set by jumping to a keyframe, editing its
+   * override, or playback crossing into its hold. */
+  displayKfIndex: number;
+  /** Live camera bearing of the editor map (ephemeral; drives the compass). */
+  mapBearing: number;
 
   loadProject(project: Project): void;
   newProject(): void;
@@ -44,6 +50,8 @@ interface EditorStore {
   addElement(element: Element): void;
   updateElement(id: string, update: (el: Element) => Element): void;
   deleteElement(id: string): void;
+  setDisplayKfIndex(index: number): void;
+  setMapBearing(bearing: number): void;
   setMode(mode: EditorMode): void;
   setPlaying(playing: boolean): void;
   setTimeMs(timeMs: number): void;
@@ -58,11 +66,13 @@ export const useEditorStore = create<EditorStore>((set) => ({
   timeMs: 0,
   thumbnails: {},
   placing: null,
+  displayKfIndex: 0,
+  mapBearing: 0,
 
   loadProject: (project) =>
-    set({ project, mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null }),
+    set({ project, mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null, displayKfIndex: 0 }),
   newProject: () =>
-    set({ project: blankProject(), mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null }),
+    set({ project: blankProject(), mode: 'edit', playing: false, timeMs: 0, thumbnails: {}, placing: null, displayKfIndex: 0 }),
 
   updateSettings: (patch) =>
     set((s) => ({ project: { ...s.project, settings: { ...s.project.settings, ...patch } } })),
@@ -132,6 +142,8 @@ export const useEditorStore = create<EditorStore>((set) => ({
   deleteElement: (id) =>
     set((s) => ({ project: { ...s.project, elements: s.project.elements.filter((el) => el.id !== id) } })),
 
+  setDisplayKfIndex: (displayKfIndex) => set({ displayKfIndex }),
+  setMapBearing: (mapBearing) => set({ mapBearing }),
   setMode: (mode) => set({ mode, ...(mode === 'preview' ? { placing: null } : {}) }),
   setPlaying: (playing) => set({ playing }),
   setTimeMs: (timeMs) => set({ timeMs }),

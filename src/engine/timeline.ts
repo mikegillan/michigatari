@@ -47,6 +47,14 @@ export function computeTimeline(project: Project): Timeline {
   return { totalMs: cursor, segments, arrivalMs };
 }
 
+/** Which keyframe "owns" timeMs: holds own their keyframe; transitions keep
+ * the departure keyframe (overrides pop on arrival, not mid-flight). */
+export function keyframeIndexAt(timeline: Timeline, timeMs: number): number {
+  const seg = segmentAt(timeline, timeMs);
+  if (!seg) return 0;
+  return seg.kind === 'hold' ? seg.keyframeIndex : seg.fromIndex;
+}
+
 export function segmentAt(timeline: Timeline, timeMs: number): Segment | undefined {
   const t = Math.min(Math.max(timeMs, 0), timeline.totalMs);
   // zero-duration segments (holdMs 0) never match t >= start && t < end, so

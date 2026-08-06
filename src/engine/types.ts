@@ -21,6 +21,9 @@ export interface Keyframe {
   camera: CameraPose;
   holdMs: number;
   transition: Transition; // flight to the NEXT keyframe; ignored on the last
+  /** Map settings from this keyframe forward (applies on arrival). Absent on
+   * keyframe 1 by convention — the project settings are its baseline. */
+  mapSettings?: MapSettingsSnapshot;
 }
 
 export type Resolution = '1080p' | '1440p' | '4k';
@@ -34,6 +37,15 @@ export interface MapDetail {
   poiLabels?: boolean;
   roads?: boolean;
   boundaries?: boolean;
+  /** North indicator, bottom-left; rotates with camera bearing. Default off. */
+  showCompass?: boolean;
+}
+
+/** A keyframe's full map-settings override (snapshot semantics: the nearest
+ * snapshot at-or-before a keyframe wins outright; no layering of deltas). */
+export interface MapSettingsSnapshot {
+  styleUrl: string;
+  mapDetail: MapDetail;
 }
 
 export interface Settings {
